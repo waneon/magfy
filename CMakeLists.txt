@@ -51,3 +51,6 @@ include_directories(${MAGFY_INCLUDES})
 # magfy
 add_executable(magfy ${MAGFY_SOURCES})
 target_link_libraries(magfy PRIVATE ${MAGFY_LIBS})
+
+# install
+install(TARGETS magfy)
