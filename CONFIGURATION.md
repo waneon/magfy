@@ -41,7 +41,7 @@ Settings related to keyboard shortcut.
 
 **Combinations**: [`MODIFIER` +]* `KEY`  
 **MODIFIER**: Ctrl | Alt | Shift  
-**KEY**: A-Z, 0-9, F1-F12
+**KEY**: A-Z | 0-9 | F1-F12
 ## toggle
 Toggle the magnifier.  
 **default**: `Alt+F1`
