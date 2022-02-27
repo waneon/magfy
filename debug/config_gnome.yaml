@@ -1,6 +1,11 @@
 ---
 magnifier:
   backend: gnome
+  mag-factor: 1.5
+  mag-enlarge-factor: 0.5
 keyboard-shortcut:
-  toggle: F1
-  exit: F2
+  toggle: Alt+F1
+  exit: Alt+F2
+mouse-shortcut:
+  toggle: Side2
+  enlarge: Side1
