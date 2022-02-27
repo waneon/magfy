@@ -4,12 +4,12 @@ universal configurable desktop magnifier controller.
 ## Supported
 ### Vendor
 - [x] X11
-- [] Wayland
-- [] Windows
+- [ ] Wayland
+- [ ] Windows
 
 ### Backend
 - [x] gnome
-- [] windows
+- [ ] windows
 
 ## Installation
 ### Manual build
