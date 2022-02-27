@@ -17,8 +17,7 @@
 std::shared_ptr<spdlog::logger> logger =
     spdlog::basic_logger_mt("magfy", "log.txt");
 #else
-std::shared_ptr<spdlog::logger> logger = 
-    spdlog::stderr_color_mt("magfy");
+std::shared_ptr<spdlog::logger> logger = spdlog::stderr_color_mt("magfy");
 #endif
 
 #if defined(MAGFY_WINDOWS)
@@ -30,7 +29,7 @@ int main() {
     // logger setting
     spdlog::flush_every(std::chrono::seconds(3));
 
-    YAML::Node root = YAML::LoadFile(get_config_file());
+    // config
     Config config;
 
     try {
@@ -38,8 +37,12 @@ int main() {
         config = root.as<Config>();
     } catch (YAML::BadFile ex) {
         logger->error("Could not find the config file.");
+#if defined(MAGFY_WINDOWS)
+        logger->error("Config file must be placed in the binary folder.");
+#else
         logger->error(
             "Config file must be placed in ~/.config/magfy/config.yaml");
+#endif
         goto error;
     } catch (YAML::Exception ex) {
         logger->error("Could not parse the config file.");
@@ -56,7 +59,7 @@ int main() {
         logger->info("Terminated normally.");
         return 0;
     } else {
-        error:
+    error:
         logger->warn("Terminated abnormally.");
         return 1;
     }
