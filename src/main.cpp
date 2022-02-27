@@ -22,6 +22,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 #else
 int main() {
 #endif
+    // logger setting
+    spdlog::flush_every(std::chrono::seconds(3));
+
     YAML::Node root = YAML::LoadFile(get_config_file());
     Config config;
 

@@ -3,7 +3,15 @@
 
 #include <string>
 
+#if defined(MAGFY_WINDOWS)
+#include <windows.h>
+#endif
+
+#if defined(MAGFY_WINDOWS)
+using Modifiers = UINT;
+#else
 using Modifiers = unsigned int;
+#endif
 
 enum class ShortcutState {
     NONE,
@@ -12,7 +20,11 @@ enum class ShortcutState {
 };
 
 struct KeyShortcut {
+#if defined(MAGFY_WINDOWS)
+    using Key = UINT;
+#else
     using Key = int;
+#endif
 
     ShortcutState state;
     Modifiers modifiers;

@@ -1,9 +1,20 @@
-#include <X11/X.h>
-#include <X11/Xlib.h>
 #include <sstream>
 #include <vector>
 
+#if defined(MAGFY_WINDOWS)
+#include <windows.h>
+#else
+#include <X11/X.h>
+#include <X11/Xlib.h>
+#endif
+
 #include "translate.h"
+
+#if defined(MAGFY_WINDOWS)
+const static UINT ANY_MODIFIERS = MOD_NOREPEAT;
+#else
+const static Modifiers ANY_MODIFIERS = AnyModifier;
+#endif
 
 static Modifiers lookup_modifier(const std::string &);
 static KeyShortcut::Key lookup_key(const std::string &);
@@ -40,7 +51,7 @@ KeyShortcut translate_into_key(const std::string &sequence) {
     }
     // if there's no modifiers
     if (ret.modifiers == 0) {
-        ret.modifiers = AnyModifier;
+        ret.modifiers = ANY_MODIFIERS;
     }
 
     // key check
@@ -85,7 +96,7 @@ ButtonShortcut translate_into_button(const std::string &sequence) {
     }
     // if there's no modifiers
     if (ret.modifiers == 0) {
-        ret.modifiers = AnyModifier;
+        ret.modifiers = ANY_MODIFIERS;
     }
 
     // key check
@@ -100,6 +111,17 @@ ButtonShortcut translate_into_button(const std::string &sequence) {
 }
 
 Modifiers lookup_modifier(const std::string &string) {
+#if defined(MAGFY_WINDOWS)
+    if (string == "Ctrl") {
+        return MOD_CONTROL;
+    } else if (string == "Alt") {
+        return MOD_ALT;
+    } else if (string == "Shift") {
+        return MOD_SHIFT;
+    } else {
+        return 0;
+    }
+#else
     if (string == "Ctrl") {
         return ControlMask;
     } else if (string == "Alt") {
@@ -109,9 +131,37 @@ Modifiers lookup_modifier(const std::string &string) {
     } else {
         return None;
     }
+#endif
 }
 
 KeyShortcut::Key lookup_key(const std::string &string) {
+#if defined(MAGFY_WINDOWS)
+    // A-Z
+    if (string.size() == 1 && string[0] >= 'A' && string[0] <= 'Z') {
+        return string[0];
+    }
+
+    // 0-9
+    if (string.size() == 1 && string[0] >= '0' && string[0] <= '9') {
+        return string[0];
+    }
+
+    // F1-F9
+    if (string.size() == 2 && string[0] == 'F' && string[1] >= '1' &&
+        string[1] <= '9') {
+        return VK_F1 + (string[1] - '1');
+    }
+    // F10 - F12
+    if (string == "F10") {
+        return VK_F10;
+    } else if (string == "F11") {
+        return VK_F11;
+    } else if (string == "F12") {
+        return VK_F12;
+    }
+
+    return 0;
+#else
     Display *dpy = XOpenDisplay(0);
 
     KeySym keysym = XStringToKeysym(string.c_str());
@@ -123,9 +173,13 @@ KeyShortcut::Key lookup_key(const std::string &string) {
 
     XCloseDisplay(dpy);
     return key;
+#endif
 }
 
 ButtonShortcut::Button lookup_button(const std::string &string) {
+#if defined(MAGFY_WINDOWS)
+    return 0;
+#else
     if (string == "Left") {
         return 1;
     } else if (string == "Midde") {
@@ -147,4 +201,5 @@ ButtonShortcut::Button lookup_button(const std::string &string) {
     } else {
         return None;
     }
+#endif
 }

@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(MAGFY_SOURCES
     "src/main.cpp"
     "src/config/Config.cpp"
-    "src/backend/gnome/Magnifier.cpp"
+    "src/translate/translate.cpp"
 )
 set(MAGFY_INCLUDES
     "src/config"
@@ -34,13 +34,16 @@ if(VENDOR STREQUAL "Windows")
     add_compile_definitions(MAGFY_WINDOWS)
     list(APPEND MAGFY_SOURCES
         "src/core/windows/core.cpp"
-        "src/translate/windows/translate.cpp"
+
+        "src/backend/windows/Magnifier.cpp"
     )
+    list(APPEND MAGFY_LIBS Magnification)
 elseif(VENDOR STREQUAL "X11")
     add_compile_definitions(MAGFY_X11)
     list(APPEND MAGFY_SOURCES
         "src/core/x11/core.cpp"
-        "src/translate/x11/translate.cpp"
+
+        "src/backend/gnome/Magnifier.cpp"
     )
     list(APPEND MAGFY_LIBS X11)
 else()

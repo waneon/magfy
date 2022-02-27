@@ -5,22 +5,30 @@
 #include "core.h"
 #include "magnifiers.h"
 #include "translate.h"
+#include "windows/Magnifier.h"
 
 extern std::shared_ptr<spdlog::logger> logger;
 
 // global objects
-HWND hWndMagfy = nullptr;
+Magnifier *magnifier = nullptr;
+HHOOK mouse_hook = nullptr;
 
 // constants
 static const char *MAGFY_MUTEX_NAME = "Magfy_Mutex.0";
-static const char *MAGFY_WINDOW_CLASS_NAME = "Magfy_Window_Class";
-static const char *MAGFY_WINDOW_NAME = "Magfy_Window";
+enum HotkeyID {
+    TOGGLE,
+    SHRINK,
+    ENLARGE,
+    EXIT,
+};
 
-// forward declarations
-void RegisterMagfyWindowClass(HINSTANCE);
-void CreateMagfyWindow(HINSTANCE);
-LRESULT CALLBACK MagfyWndProc(HWND hWnd, UINT message, WPARAM wParam,
-                              LPARAM lParam);
+// register keyboard shortcut
+static bool register_key(const KeyShortcut &, std::string_view, int);
+// un-register keyboard shortcut
+static bool unregister_key(const KeyShortcut &, std::string_view, int);
+
+// mouse hook proc
+static LRESULT CALLBACK MouseHookProc(int, WPARAM, LPARAM);
 
 std::string get_config_file() {
 #if defined(NDEBUG)
@@ -39,36 +47,104 @@ bool run(HINSTANCE hInstance, const Config &config) {
         return false;
     }
 
-    // create magfy window
-    RegisterMagfyWindowClass(hInstance);
-    CreateMagfyWindow(hInstance);
+    // Magnifier
+    switch (config.backend) {
+    case Backend::WINDOWS:
+        magnifier = new windows::Magnifier{config};
+        break;
+    default:
+        logger->error("Could not load magnifier.");
+        return false;
+    }
+
+    // register shortcuts
+    if (!register_key(config.toggle_key, "toggle", HotkeyID::TOGGLE))
+        return false;
+    if (!register_key(config.shrink_key, "shrink", HotkeyID::SHRINK))
+        return false;
+    if (!register_key(config.enlarge_key, "enlarge", HotkeyID::ENLARGE))
+        return false;
+    if (!register_key(config.exit_key, "exit", HotkeyID::EXIT))
+        return false;
+
+    // mouse hook
+    mouse_hook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, hInstance, NULL);
 
     // event loop
-    // MSG msg = {};
-    // while (GetMessage(&msg, hWndMagfy, 0, 0)) {
-    //     TranslateMessage(&msg);
-    //     DispatchMessage(&msg);
-    // }
+    MSG msg = {};
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        switch (msg.message) {
+        case WM_HOTKEY:
+            switch (msg.wParam) {
+            case HotkeyID::TOGGLE:
+                magnifier->toggle();
+                magnifier->update();
+                break;
+            case HotkeyID::SHRINK:
+                magnifier->shrink();
+                magnifier->update();
+                break;
+            case HotkeyID::ENLARGE:
+                magnifier->enlarge();
+                magnifier->update();
+                break;
+            case HotkeyID::EXIT:
+                PostQuitMessage(0);
+                break;
+            default:
+                logger->error("Unknown hotkey id.");
+                PostQuitMessage(0);
+                break;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
+    // free
+    delete magnifier;
+
+    // un-register shortcuts
+    if (!unregister_key(config.toggle_key, "toggle", HotkeyID::TOGGLE))
+        return false;
+    if (!unregister_key(config.shrink_key, "shrink", HotkeyID::SHRINK))
+        return false;
+    if (!unregister_key(config.enlarge_key, "enlarge", HotkeyID::ENLARGE))
+        return false;
+    if (!unregister_key(config.exit_key, "exit", HotkeyID::EXIT))
+        return false;
 
     return true;
 }
 
-LRESULT CALLBACK MagfyWndProc(HWND hWnd, UINT message, WPARAM wParam,
-                              LPARAM lParam) {
-    return 0;
+bool register_key(const KeyShortcut &shortcut, std::string_view name, int id) {
+    if (shortcut.state != ShortcutState::NONE) {
+        if (RegisterHotKey(NULL, id, shortcut.modifiers, shortcut.key) ==
+            false) {
+            logger->error("Could not register key shortcut: {}", name);
+            return false;
+        }
+    }
+    return true;
 }
 
-void RegisterMagfyWindowClass(HINSTANCE hInstance) {
-    WNDCLASSEX wcex = {};
-    wcex.cbSize = sizeof(WNDCLASSEX);
-    wcex.lpfnWndProc = MagfyWndProc;
-    wcex.hInstance = hInstance;
-    wcex.lpszClassName = MAGFY_WINDOW_CLASS_NAME;
-
-    RegisterClassEx(&wcex);
+bool unregister_key(const KeyShortcut &shortcut, std::string_view name,
+                    int id) {
+    if (shortcut.state != ShortcutState::NONE) {
+        if (UnregisterHotKey(NULL, id) == false) {
+            logger->error("Could not un-register key shortcut: {}", name);
+            return false;
+        }
+    }
+    return true;
 }
 
-void CreateMagfyWindow(HINSTANCE hInstance) {
-    hWndMagfy = CreateWindowEx(0, MAGFY_WINDOW_CLASS_NAME, MAGFY_WINDOW_NAME, 0,
-                               0, 0, 0, 0, HWND_MESSAGE, NULL, NULL, NULL);
+static LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    // mouse move
+    if (wParam == WM_MOUSEMOVE) {
+        magnifier->update();
+    }
+
+    return CallNextHookEx(mouse_hook, nCode, wParam, lParam);
 }
