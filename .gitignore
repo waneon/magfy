@@ -2,4 +2,4 @@
 .cache/
 build/
 
-debug/magfy.yaml
+debug/config.yaml

@@ -1,7 +1,6 @@
 #ifndef __TRANSLATE_H
 #define __TRANSLATE_H
 
-#include <X11/Xlib.h>
 #include <string>
 
 using Modifiers = unsigned int;

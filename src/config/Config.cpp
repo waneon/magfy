@@ -5,12 +5,14 @@
 #include "Config.h"
 #include "translate.h"
 
+extern std::shared_ptr<spdlog::logger> logger;
+
 // parsing error
 inline void invalid_value(std::string attribute) {
-    spdlog::error("Invalid value of attribute \"{}\"", attribute);
+    logger->error("Invalid value of attribute \"{}\"", attribute);
 }
 inline void invalid_shortcut(std::string attribute) {
-    spdlog::error("Invalid shortcut of attribute \"{}\"", attribute);
+    logger->error("Invalid shortcut of attribute \"{}\"", attribute);
 }
 
 namespace YAML {
@@ -29,6 +31,8 @@ bool convert<Config>::decode(const Node &root, Config &rhs) {
 
         if (backend == "gnome") {
             rhs.backend = Backend::GNOME;
+        } else if (backend == "windows") {
+            rhs.backend = Backend::WINDOWS;
         } else {
             invalid_value("magnifier::backend");
             return false;

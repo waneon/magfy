@@ -31,23 +31,34 @@ list(APPEND MAGFY_LIBS yaml-cpp)
 
 # vendor setting
 if(VENDOR STREQUAL "Windows")
+    add_compile_definitions(MAGFY_WINDOWS)
+    list(APPEND MAGFY_SOURCES
+        "src/core/windows/core.cpp"
+        "src/translate/windows/translate.cpp"
+    )
 elseif(VENDOR STREQUAL "X11")
-    add_compile_definitions(X11)
+    add_compile_definitions(MAGFY_X11)
     list(APPEND MAGFY_SOURCES
         "src/core/x11/core.cpp"
         "src/translate/x11/translate.cpp"
     )
     list(APPEND MAGFY_LIBS X11)
+else()
+    message(FATAL_ERROR "You must specify vendor: Windows, X11")
 endif()
 
 # debug setting
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_definitions(CONFIG_FILE="${CMAKE_SOURCE_DIR}/debug/magfy.yaml")
+    add_compile_definitions(CONFIG_FILE="${CMAKE_SOURCE_DIR}/debug/config.yaml")
 endif()
 
 # includes
 include_directories(${MAGFY_INCLUDES})
 
 # magfy
-add_executable(main ${MAGFY_SOURCES})
-target_link_libraries(main PRIVATE ${MAGFY_LIBS})
+if(VENDOR STREQUAL "Windows")
+    add_executable(magfy WIN32 ${MAGFY_SOURCES})
+else()
+    add_executable(magfy ${MAGFY_SOURCES})
+endif()
+target_link_libraries(magfy PRIVATE ${MAGFY_LIBS})

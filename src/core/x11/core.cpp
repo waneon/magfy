@@ -9,6 +9,8 @@
 #include "magnifiers.h"
 #include "translate.h"
 
+extern std::shared_ptr<spdlog::logger> logger;
+
 // register keyboard shortcut
 static bool register_key(const KeyShortcut &, std::string_view, Display *,
                          Window);
@@ -41,7 +43,7 @@ bool run(const Config &config) {
         magnifier = new gnome::Magnifier{config};
         break;
     default:
-        spdlog::error("Could not load magnifier.");
+        logger->error("Could not load magnifier.");
         return false;
     }
 
@@ -125,10 +127,10 @@ bool register_key(const KeyShortcut &shortcut, std::string_view name,
     if (shortcut.state != ShortcutState::NONE) {
         if (!XGrabKey(dpy, shortcut.key, shortcut.modifiers, root, False,
                       GrabModeAsync, GrabModeAsync)) {
-            spdlog::error("Could not register {} key shortcut.", name);
+            logger->error("Could not register {} key shortcut.", name);
             return false;
         } else {
-            spdlog::info("Successfully registered {} key shortcut.", name);
+            logger->info("Successfully registered {} key shortcut.", name);
         };
     }
     return true;
@@ -138,10 +140,10 @@ static bool unregister_key(const KeyShortcut &shortcut, std::string_view name,
                            Display *dpy, Window root) {
     if (shortcut.state != ShortcutState::NONE) {
         if (!XUngrabKey(dpy, shortcut.key, shortcut.modifiers, root)) {
-            spdlog::error("Could not un-register {} key shortcut.", name);
+            logger->error("Could not un-register {} key shortcut.", name);
             return false;
         } else {
-            spdlog::info("Successfully un-registered {} key shortcut.", name);
+            logger->info("Successfully un-registered {} key shortcut.", name);
         };
     }
     return true;
@@ -153,10 +155,10 @@ bool register_button(const ButtonShortcut &shortcut, std::string_view name,
         if (!XGrabButton(dpy, shortcut.button, shortcut.modifiers, root, False,
                          ButtonPressMask, GrabModeAsync, GrabModeAsync, None,
                          None)) {
-            spdlog::error("Could not register {} button shortcut.", name);
+            logger->error("Could not register {} button shortcut.", name);
             return false;
         } else {
-            spdlog::info("Successfully registered {} button shortcut.", name);
+            logger->info("Successfully registered {} button shortcut.", name);
         };
     }
     return true;
@@ -167,10 +169,10 @@ static bool unregister_button(const ButtonShortcut &shortcut,
                               Window root) {
     if (shortcut.state != ShortcutState::NONE) {
         if (!XUngrabButton(dpy, shortcut.button, shortcut.modifiers, root)) {
-            spdlog::error("Could not un-register {} button shortcut.", name);
+            logger->error("Could not un-register {} button shortcut.", name);
             return false;
         } else {
-            spdlog::info("Successfully un-registered {} button shortcut.",
+            logger->info("Successfully un-registered {} button shortcut.",
                          name);
         };
     }
