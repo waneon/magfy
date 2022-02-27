@@ -1,7 +1,10 @@
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <cstdlib>
+#include <pwd.h>
 #include <spdlog/spdlog.h>
+#include <unistd.h>
 
 #include "core.h"
 #include "magnifiers.h"
@@ -25,6 +28,14 @@ static int x11_error_handler(Display *, XErrorEvent *e);
 
 std::string get_config_file() {
 #if defined(NDEBUG)
+    static const char *CONFIG_FILE = "/.config/magfy/config.yaml";
+
+    const char *homedir;
+    if ((homedir = getenv("HOME")) == NULL) {
+        homedir = getpwuid(getuid())->pw_dir;
+    }
+
+    return std::string{homedir} + std::string{CONFIG_FILE};
 #else
     return CONFIG_FILE;
 #endif
@@ -143,7 +154,8 @@ int x11_error_handler(Display *dpy, XErrorEvent *e) {
     char error_msg[256];
 
     XGetErrorText(dpy, e->error_code, error_msg, sizeof(error_msg));
-    spdlog::error("X11 error occured: {}, serial number: {}", error_msg, e->serial);
+    spdlog::error("X11 error occured: {}, serial number: {}", error_msg,
+                  e->serial);
 
     return 0;
 }

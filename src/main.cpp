@@ -1,3 +1,4 @@
+#include <fstream>
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/exceptions.h>
 #include <yaml-cpp/yaml.h>
@@ -6,16 +7,20 @@
 #include "core.h"
 
 int main() {
-    YAML::Node root = YAML::LoadFile(get_config_file());
     Config config;
 
     try {
+        YAML::Node root = YAML::LoadFile(get_config_file());
         config = root.as<Config>();
+    } catch (YAML::BadFile ex) {
+        spdlog::error("Could not find the config file.");
+        spdlog::error(
+            "Config file must be placed in ~/.config/magfy/config.yaml");
+        goto error;
     } catch (YAML::Exception ex) {
         spdlog::error("Could not parse the config file.");
         spdlog::error("Parse error => {}", ex.msg);
-        spdlog::warn("Terminated abnormally.");
-        return 1;
+        goto error;
     }
     spdlog::info("Successfully loaded the config file.");
 
@@ -23,6 +28,7 @@ int main() {
         spdlog::info("Terminated normally.");
         return 0;
     } else {
+    error:
         spdlog::warn("Terminated abnormally.");
         return 1;
     }
