@@ -60,7 +60,7 @@ void Magnifier::enlarge() {
 }
 
 void Magnifier::shrink() {
-    if (is_magnified && cur_mag_factor - mag_shrink_factor > 0) {
+    if (is_magnified && cur_mag_factor - mag_shrink_factor >= 1.0) {
         cur_mag_factor -= mag_shrink_factor;
         logger->info("Set magnifier mag-factor to {}", cur_mag_factor);
     }
