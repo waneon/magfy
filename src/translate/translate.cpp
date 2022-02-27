@@ -19,6 +19,9 @@ const static Modifiers ANY_MODIFIERS = AnyModifier;
 static Modifiers lookup_modifier(const std::string &);
 static KeyShortcut::Key lookup_key(const std::string &);
 static ButtonShortcut::Button lookup_button(const std::string &);
+#if defined(MAGFY_WINDOWS)
+static int lookup_button_extra(const std::string &);
+#endif
 
 KeyShortcut translate_into_key(const std::string &sequence) {
     std::istringstream is{sequence};
@@ -99,11 +102,14 @@ ButtonShortcut translate_into_button(const std::string &sequence) {
         ret.modifiers = ANY_MODIFIERS;
     }
 
-    // key check
+    // button check
     ButtonShortcut::Button b = lookup_button(*token.rbegin());
     if (b == 0) {
         return ret;
     }
+#if defined(MAGFY_WINDOWS)
+    ret.extra = lookup_button_extra(*token.rbegin());
+#endif
     ret.button = b;
 
     ret.state = ShortcutState::VALID;
@@ -178,7 +184,27 @@ KeyShortcut::Key lookup_key(const std::string &string) {
 
 ButtonShortcut::Button lookup_button(const std::string &string) {
 #if defined(MAGFY_WINDOWS)
-    return 0;
+    if (string == "Left") {
+        return WM_LBUTTONDOWN;
+    } else if (string == "Midde") {
+        return WM_MBUTTONDOWN;
+    } else if (string == "Right") {
+        return WM_RBUTTONDOWN;
+    } else if (string == "WheelUp") {
+        return WM_MOUSEWHEEL;
+    } else if (string == "WheelDown") {
+        return WM_MOUSEWHEEL;
+    } else if (string == "WheelLeft") {
+        return WM_MOUSEHWHEEL;
+    } else if (string == "WheelRight") {
+        return WM_MOUSEHWHEEL;
+    } else if (string == "Side1") {
+        return WM_XBUTTONDOWN;
+    } else if (string == "Side2") {
+        return WM_XBUTTONDOWN;
+    } else {
+        return 0;
+    }
 #else
     if (string == "Left") {
         return 1;
@@ -203,3 +229,33 @@ ButtonShortcut::Button lookup_button(const std::string &string) {
     }
 #endif
 }
+
+#if defined(MAGFY_WINDOWS)
+int lookup_button_extra(const std::string &string) {
+    if (string == "WheelUp") {
+        return 1;
+    } else if (string == "WheelDown") {
+        return -1;
+    } else if (string == "WheelLeft") {
+        return -1;
+    } else if (string == "WheelRight") {
+        return 1;
+    } else if (string == "Side1") {
+        return 1;
+    } else if (string == "Side2") {
+        return 2;
+    } else {
+        return 0;
+    }
+}
+#endif
+
+#if defined(MAGFY_WINDOWS)
+bool operator==(const ButtonShortcut &lhs, const ButtonShortcut &rhs) {
+    if (lhs.button == rhs.button && lhs.modifiers == rhs.modifiers &&
+        lhs.state == rhs.state && lhs.extra == rhs.extra) {
+        return true;
+    }
+    return false;
+}
+#endif

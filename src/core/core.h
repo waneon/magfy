@@ -14,7 +14,7 @@ std::string get_config_file();
 
 // run magnifier
 #if defined(MAGFY_WINDOWS)
-bool run(HINSTANCE, const Config &);
+bool run(HINSTANCE, Config &);
 #else
 bool run(const Config &);
 #endif

@@ -32,12 +32,24 @@ struct KeyShortcut {
 };
 
 struct ButtonShortcut {
+#if defined(MAGFY_WINDOWS)
+    using Button = UINT;
+#else
     using Button = unsigned int;
+#endif
 
     ShortcutState state;
     Modifiers modifiers;
     Button button;
+#if defined(MAGFY_WINDOWS)
+    int extra;
+#endif
 };
+
+// ButtonShortcut comparison operator for Windows
+#if defined(MAGFY_WINDOWS)
+bool operator==(const ButtonShortcut &, const ButtonShortcut &);
+#endif
 
 KeyShortcut translate_into_key(const std::string &);
 

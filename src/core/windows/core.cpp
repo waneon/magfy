@@ -12,6 +12,7 @@ extern std::shared_ptr<spdlog::logger> logger;
 // global objects
 Magnifier *magnifier = nullptr;
 HHOOK mouse_hook = nullptr;
+Config *global_config = nullptr;
 
 // constants
 static const char *MAGFY_MUTEX_NAME = "Magfy_Mutex.0";
@@ -37,7 +38,7 @@ std::string get_config_file() {
 #endif
 }
 
-bool run(HINSTANCE hInstance, const Config &config) {
+bool run(HINSTANCE hInstance, Config &config) {
     // check whether magfy application is already running
     HANDLE hMutex = OpenMutex(MUTEX_ALL_ACCESS, 0, MAGFY_MUTEX_NAME);
     if (!hMutex) {
@@ -46,6 +47,9 @@ bool run(HINSTANCE hInstance, const Config &config) {
         logger->error("Magfy is already running.");
         return false;
     }
+
+    // global config
+    global_config = &config;
 
     // Magnifier
     switch (config.backend) {
@@ -144,6 +148,84 @@ static LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
     // mouse move
     if (wParam == WM_MOUSEMOVE) {
         magnifier->update();
+    } else { // mouse shortcut
+        ButtonShortcut cur = {};
+        cur.state = ShortcutState::VALID;
+        cur.button = wParam;
+
+        // cur extra
+        auto hook_struct = (MSLLHOOKSTRUCT *)lParam;
+        switch (wParam) {
+        case WM_MOUSEWHEEL:
+        case WM_MOUSEHWHEEL:
+            if (GET_WHEEL_DELTA_WPARAM(hook_struct->mouseData) > 0) {
+                cur.extra = 1;
+            } else {
+                cur.extra = -1;
+            }
+            break;
+        case WM_XBUTTONDOWN:
+        case WM_XBUTTONUP:
+            cur.extra = GET_XBUTTON_WPARAM(hook_struct->mouseData);
+            break;
+        default:
+            cur.extra = 0;
+            break;
+        }
+
+        // cur modifiers
+        if (GetKeyState(VK_CONTROL) & 0x8000)
+            cur.modifiers |= MOD_CONTROL;
+        if (GetKeyState(VK_MENU) & 0x8000)
+            cur.modifiers |= MOD_ALT;
+        if (GetKeyState(VK_SHIFT) & 0x8000)
+            cur.modifiers |= MOD_SHIFT;
+        if (cur.modifiers == 0)
+            cur.modifiers = MOD_NOREPEAT;
+
+        // shortcut comparison
+        if (cur == global_config->toggle_button) {
+            magnifier->toggle();
+            magnifier->update();
+            return -1;
+        } else if (cur == global_config->shrink_button) {
+            magnifier->shrink();
+            magnifier->update();
+            return -1;
+        } else if (cur == global_config->enlarge_button) {
+            magnifier->enlarge();
+            magnifier->update();
+            return -1;
+        } else if (cur == global_config->exit_button) {
+            PostQuitMessage(0);
+            return -1;
+        }
+
+        // button-up event hook
+        switch (wParam) {
+        case WM_LBUTTONUP:
+            cur.button = WM_LBUTTONDOWN;
+            break;
+        case WM_MBUTTONUP:
+            cur.button = WM_LBUTTONDOWN;
+            break;
+        case WM_RBUTTONUP:
+            cur.button = WM_RBUTTONUP;
+            break;
+        case WM_XBUTTONUP:
+            cur.button = WM_XBUTTONDOWN;
+            break;
+        }
+
+        if (cur == global_config->toggle_button) {
+            return -1;
+        } else if (cur == global_config->shrink_button) {
+            return -1;
+        } else if (cur == global_config->enlarge_button) {
+            return -1;
+        } else if (cur == global_config->exit_button) {
+            return -1;
+        }
     }
 
     return CallNextHookEx(mouse_hook, nCode, wParam, lParam);
