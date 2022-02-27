@@ -42,7 +42,7 @@ endif()
 
 # debug setting
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_definitions(CONFIG_FILE="${CMAKE_SOURCE_DIR}/debug/magfy.yaml")
+    add_compile_definitions(CONFIG_FILE="${CMAKE_SOURCE_DIR}/debug/config.yaml")
 endif()
 
 # includes
