@@ -1,0 +1,6 @@
+---
+magnifier:
+  backend: windows
+keyboard-shortcut:
+  toggle: F1
+  exit: F2

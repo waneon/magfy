@@ -29,9 +29,10 @@ class Magnifier {
         else
             magnify();
     }
-
     virtual void enlarge() = 0;
     virtual void shrink() = 0;
+
+    virtual void update() const = 0;
 };
 
 #endif // __MAGNIFIER_H

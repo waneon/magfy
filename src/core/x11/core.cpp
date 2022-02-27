@@ -10,6 +10,8 @@
 #include "magnifiers.h"
 #include "translate.h"
 
+extern std::shared_ptr<spdlog::logger> logger;
+
 // register keyboard shortcut
 static void register_key(const KeyShortcut &, std::string_view, Display *,
                          Window);
@@ -56,7 +58,7 @@ bool run(const Config &config) {
         magnifier = new gnome::Magnifier{config};
         break;
     default:
-        spdlog::error("Could not load magnifier.");
+        logger->error("Could not load magnifier.");
         return false;
     }
 
