@@ -17,6 +17,7 @@ universal configurable desktop magnifier controller.
 git clone https://github.com/waneon/magfy
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DVENDOR="X11 | Wayland | Windows"
+make
 ```
 
 ## Usage
