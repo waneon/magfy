@@ -37,13 +37,13 @@ int main() {
         YAML::Node root = YAML::LoadFile(get_config_file());
         config = root.as<Config>();
     } catch (YAML::BadFile ex) {
-        spdlog::error("Could not find the config file.");
-        spdlog::error(
+        logger->error("Could not find the config file.");
+        logger->error(
             "Config file must be placed in ~/.config/magfy/config.yaml");
         goto error;
     } catch (YAML::Exception ex) {
-        spdlog::error("Could not parse the config file.");
-        spdlog::error("Parse error => {}", ex.msg);
+        logger->error("Could not parse the config file.");
+        logger->error("Parse error => {}", ex.msg);
         goto error;
     }
     logger->info("Successfully loaded the config file.");

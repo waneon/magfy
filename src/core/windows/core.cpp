@@ -33,6 +33,7 @@ static LRESULT CALLBACK MouseHookProc(int, WPARAM, LPARAM);
 
 std::string get_config_file() {
 #if defined(NDEBUG)
+    return "config.yaml";
 #else
     return CONFIG_FILE;
 #endif
