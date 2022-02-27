@@ -49,5 +49,5 @@ endif()
 include_directories(${MAGFY_INCLUDES})
 
 # magfy
-add_executable(main ${MAGFY_SOURCES})
-target_link_libraries(main PRIVATE ${MAGFY_LIBS})
+add_executable(magfy ${MAGFY_SOURCES})
+target_link_libraries(magfy PRIVATE ${MAGFY_LIBS})
