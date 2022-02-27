@@ -22,7 +22,7 @@ mouse-shortcut:
 # magnifier (must be specified)
 Settings related to magnifier.
 ## backend (must be specified)
-Setting which backend to use.
+Setting which backend to use.  
 **default**: `None`  
 **available**: `gnome`, `windows`
 ## mag-factor
