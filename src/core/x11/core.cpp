@@ -1,9 +1,7 @@
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <endian.h>
 #include <spdlog/spdlog.h>
-#include <string_view>
 
 #include "core.h"
 #include "magnifiers.h"
