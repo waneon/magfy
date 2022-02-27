@@ -5,9 +5,6 @@
 
 namespace gnome {
 class Magnifier : public ::Magnifier {
-  private:
-    void update_mag_factor();
-
   public:
     Magnifier(const Config &config);
     virtual ~Magnifier();
@@ -16,6 +13,8 @@ class Magnifier : public ::Magnifier {
     virtual void unmagnify() override;
     virtual void enlarge() override;
     virtual void shrink() override;
+
+    virtual void update() const override;
 };
 } // namespace gnome
 

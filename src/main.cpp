@@ -6,6 +6,8 @@
 #if defined(MAGFY_WINDOWS)
 #include <spdlog/sinks/basic_file_sink.h>
 #include <windows.h>
+#else
+#include <spdlog/sinks/stdout_color_sinks.h>
 #endif
 
 #include "Config.h"
@@ -15,6 +17,8 @@
 std::shared_ptr<spdlog::logger> logger =
     spdlog::basic_logger_mt("magfy", "log.txt");
 #else
+std::shared_ptr<spdlog::logger> logger = 
+    spdlog::stderr_color_mt("magfy");
 #endif
 
 #if defined(MAGFY_WINDOWS)

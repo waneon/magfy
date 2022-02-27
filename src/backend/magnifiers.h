@@ -3,7 +3,7 @@
 
 #if defined(MAGFY_WINDOWS)
 #include "windows/Magnifier.h"
-#elif defiined(MAGFY_X11)
+#elif defined(MAGFY_X11)
 #include "gnome/Magnifier.h"
 #endif
 

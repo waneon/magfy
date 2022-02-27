@@ -83,23 +83,31 @@ bool run(const Config &config) {
         case KeyPress:
             if (ev.xkey.keycode == config.toggle_key.key) {
                 magnifier->toggle();
+                magnifier->update();
             } else if (ev.xkey.keycode == config.shrink_key.key) {
                 magnifier->shrink();
+                magnifier->update();
             } else if (ev.xkey.keycode == config.enlarge_key.key) {
                 magnifier->enlarge();
+                magnifier->update();
             } else if (ev.xkey.keycode == config.exit_key.key) {
                 goto out;
             }
+            break;
         case ButtonPress:
             if (ev.xbutton.button == config.toggle_button.button) {
                 magnifier->toggle();
+                magnifier->update();
             } else if (ev.xbutton.button == config.shrink_button.button) {
                 magnifier->shrink();
+                magnifier->update();
             } else if (ev.xbutton.button == config.enlarge_button.button) {
                 magnifier->enlarge();
+                magnifier->update();
             } else if (ev.xbutton.button == config.exit_button.button) {
                 goto out;
             }
+            break;
         }
     }
 out:

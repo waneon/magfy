@@ -37,7 +37,33 @@ Magnifier::~Magnifier() {
     };
 }
 
-void Magnifier::update_mag_factor() {
+void Magnifier::magnify() {
+    is_magnified = true;
+    cur_mag_factor = mag_factor;
+    logger->info("Set magnifier mag-factor to {}", cur_mag_factor);
+}
+
+void Magnifier::unmagnify() {
+    is_magnified = false;
+    cur_mag_factor = 1.0;
+    logger->info("Set magnifier mag-factor to {}", cur_mag_factor);
+}
+
+void Magnifier::enlarge() {
+    if (is_magnified) {
+        cur_mag_factor += mag_enlarge_factor;
+        logger->info("Set magnifier mag-factor to {}", cur_mag_factor);
+    }
+}
+
+void Magnifier::shrink() {
+    if (is_magnified && cur_mag_factor - mag_shrink_factor > 0) {
+        cur_mag_factor -= mag_shrink_factor;
+        logger->info("Set magnifier mag-factor to {}", cur_mag_factor);
+    }
+}
+
+void Magnifier::update() const {
     char command[100];
     sprintf(command,
             "gsettings set org.gnome.desktop.a11y.magnifier "
@@ -46,35 +72,5 @@ void Magnifier::update_mag_factor() {
     if (system(command) != 0) {
         logger->warn("gsetting terminated abnormally.");
     };
-}
-
-void Magnifier::magnify() {
-    is_magnified = true;
-    cur_mag_factor = mag_factor;
-    update_mag_factor();
-    logger->info("Set magnifier mag-factor to {}", cur_mag_factor);
-}
-
-void Magnifier::unmagnify() {
-    is_magnified = false;
-    cur_mag_factor = 1.0;
-    update_mag_factor();
-    logger->info("Set magnifier mag-factor to {}", cur_mag_factor);
-}
-
-void Magnifier::enlarge() {
-    if (is_magnified) {
-        cur_mag_factor += mag_enlarge_factor;
-        update_mag_factor();
-        logger->info("Set magnifier mag-factor to {}", cur_mag_factor);
-    }
-}
-
-void Magnifier::shrink() {
-    if (is_magnified && cur_mag_factor - mag_shrink_factor > 0) {
-        cur_mag_factor -= mag_shrink_factor;
-        update_mag_factor();
-        logger->info("Set magnifier mag-factor to {}", cur_mag_factor);
-    }
 }
 } // namespace gnome
