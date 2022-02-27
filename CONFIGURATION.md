@@ -44,7 +44,7 @@ Settings related to keyboard shortcut.
 **KEY**: A-Z | 0-9 | F1-F12
 ## toggle
 Toggle the magnifier.  
-**default**: `Alt+F1`
+**default**: `None`
 ## shrink
 Shrink the mag-factor.  
 **default**: `None`

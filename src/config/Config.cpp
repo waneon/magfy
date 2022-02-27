@@ -86,12 +86,7 @@ bool convert<Config>::decode(const Node &root, Config &rhs) {
 
     } else {
         // toggle
-        KeyShortcut toggle = translate_into_key("Alt+F1");
-        if (toggle.state == ShortcutState::INVALID) {
-            invalid_shortcut("keyboard-shortcut::toggle");
-            return false;
-        }
-        rhs.toggle_key = toggle;
+        rhs.toggle_key = {.state = ShortcutState::NONE};
 
         // shrink
         rhs.shrink_key = {.state = ShortcutState::NONE};
