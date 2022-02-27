@@ -35,7 +35,11 @@ int main() {
     }
     logger->info("Successfully loaded the config file.");
 
+#if defined(MAGFY_WINDOWS)
+    if (run(hInstance, config)) {
+#else
     if (run(config)) {
+#endif
         logger->info("Terminated normally.");
         return 0;
     } else {
