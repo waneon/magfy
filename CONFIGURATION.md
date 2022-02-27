@@ -19,10 +19,10 @@ mouse-shortcut:
   enlarge: Side1
 ```
 
-# magnifier
+# magnifier (must be specified)
 Settings related to magnifier.
-## backend
-Setting which backend to use. This setting must be specified.  
+## backend (must be specified)
+Setting which backend to use.
 **default**: `None`  
 **available**: `gnome`, `windows`
 ## mag-factor
