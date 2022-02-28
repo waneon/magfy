@@ -69,7 +69,7 @@ bool convert<Config>::decode(const Node &root, Config &rhs) {
         };
 
         // toggle
-        if (!parse_key("toggle", "Alt+F1", rhs.toggle_key))
+        if (!parse_key("toggle", "", rhs.toggle_key))
             return false;
 
         // shrink
