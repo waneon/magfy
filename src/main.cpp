@@ -13,12 +13,7 @@
 #include "Config.h"
 #include "core.h"
 
-#if defined(MAGFY_WINDOWS)
-std::shared_ptr<spdlog::logger> logger =
-    spdlog::basic_logger_mt("magfy", "log.txt");
-#else
-std::shared_ptr<spdlog::logger> logger = spdlog::stderr_color_mt("magfy");
-#endif
+std::shared_ptr<spdlog::logger> logger;
 
 #if defined(MAGFY_WINDOWS)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
@@ -27,11 +22,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 int main() {
 #endif
     // logger setting
+#if defined(MAGFY_WINDOWS)
+    logger = spdlog::basic_logger_mt("magfy", get_log_file());
     spdlog::flush_every(std::chrono::seconds(3));
+#else
+    logger = spdlog::stderr_color_mt("magfy");
+#endif
 
-    // config
     Config config;
-
     try {
         YAML::Node root = YAML::LoadFile(get_config_file());
         config = root.as<Config>();

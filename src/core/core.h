@@ -12,6 +12,11 @@
 // return the setting file path
 std::string get_config_file();
 
+// return the log file path
+#if defined(MAGFY_WINDOWS)
+std::string get_log_file();
+#endif
+
 // run magnifier
 #if defined(MAGFY_WINDOWS)
 bool run(HINSTANCE, Config &);

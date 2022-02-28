@@ -1,6 +1,8 @@
 #include <spdlog/spdlog.h>
 #include <string_view>
 #include <windows.h>
+#include <Shlobj.h>
+#include <string>
 
 #include "core.h"
 #include "magnifiers.h"
@@ -33,11 +35,34 @@ static LRESULT CALLBACK MouseHookProc(int, WPARAM, LPARAM);
 
 std::string get_config_file() {
 #if defined(NDEBUG)
-    return "config.yaml";
+    wchar_t *path_wchar = nullptr;
+    SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &path_wchar);
+
+    std::wstring path_wstring = path_wchar;
+    std::string path{path_wstring.begin(), path_wstring.end()};
+
+    path += "/magfy";
+    CreateDirectory(path.c_str(), NULL);
+
+    return path + "/config.yaml";
 #else
     return CONFIG_FILE;
 #endif
 }
+
+std::string get_log_file() {
+    wchar_t *path_wchar = nullptr;
+    SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &path_wchar);
+
+    std::wstring path_wstring = path_wchar;
+    std::string path{path_wstring.begin(), path_wstring.end()};
+
+    path += "/magfy";
+    CreateDirectory(path.c_str(), NULL);
+
+    return path + "/log.txt";
+}
+
 
 bool run(HINSTANCE hInstance, Config &config) {
     // check whether magfy application is already running
