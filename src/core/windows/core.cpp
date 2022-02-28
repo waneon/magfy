@@ -1,8 +1,9 @@
+#include <Shlobj.h>
 #include <spdlog/spdlog.h>
+#include <string>
 #include <string_view>
 #include <windows.h>
-#include <Shlobj.h>
-#include <string>
+
 
 #include "core.h"
 #include "magnifiers.h"
@@ -33,13 +34,53 @@ static bool unregister_key(const KeyShortcut &, std::string_view, int);
 // mouse hook proc
 static LRESULT CALLBACK MouseHookProc(int, WPARAM, LPARAM);
 
+// wchar_t* to std::string
+// https://wendys.tistory.com/84
+DWORD convert_unicode_to_ansi_string(__out std::string &ansi,
+                                     __in const wchar_t *unicode,
+                                     __in const size_t unicode_size) {
+    DWORD error = 0;
+    do {
+        if ((nullptr == unicode) || (0 == unicode_size)) {
+            error = ERROR_INVALID_PARAMETER;
+            break;
+        }
+        ansi.clear();
+        //
+        // getting required cch.
+        //
+        int required_cch = ::WideCharToMultiByte(CP_ACP, 0, unicode,
+                                                 static_cast<int>(unicode_size),
+                                                 nullptr, 0, nullptr, nullptr);
+        if (0 == required_cch) {
+            error = ::GetLastError();
+            break;
+        }
+        //
+        // allocate.
+        //
+        ansi.resize(required_cch);
+        //
+        // convert.
+        //
+        if (0 == ::WideCharToMultiByte(
+                     CP_ACP, 0, unicode, static_cast<int>(unicode_size),
+                     const_cast<char *>(ansi.c_str()),
+                     static_cast<int>(ansi.size()), nullptr, nullptr)) {
+            error = ::GetLastError();
+            break;
+        }
+    } while (false);
+    return error;
+}
+
 std::string get_config_file() {
 #if defined(NDEBUG)
     wchar_t *path_wchar = nullptr;
     SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &path_wchar);
 
-    std::wstring path_wstring = path_wchar;
-    std::string path{path_wstring.begin(), path_wstring.end()};
+    std::string path;
+    convert_unicode_to_ansi_string(path, path_wchar, wcslen(path_wchar));
 
     path += "/magfy";
     CreateDirectory(path.c_str(), NULL);
@@ -54,15 +95,14 @@ std::string get_log_file() {
     wchar_t *path_wchar = nullptr;
     SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &path_wchar);
 
-    std::wstring path_wstring = path_wchar;
-    std::string path{path_wstring.begin(), path_wstring.end()};
+    std::string path;
+    convert_unicode_to_ansi_string(path, path_wchar, wcslen(path_wchar));
 
     path += "/magfy";
     CreateDirectory(path.c_str(), NULL);
 
     return path + "/log.txt";
 }
-
 
 bool run(HINSTANCE hInstance, Config &config) {
     // check whether magfy application is already running
