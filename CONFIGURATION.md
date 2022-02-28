@@ -1,19 +1,22 @@
 # config.yaml
 configuration file must be located in the path below.  
 * **X11** `~/.config/magfy/config.yaml`  
-* **Wayland** to be supported  
-* **Windows** to be supported
+* **Windows** `in the binary folder`  
+* **Wayland** to be supported
 
 # Example
 ```sh
 ---
 magnifier:
-  backend: gnome
+  backend: windows
   mag-factor: 1.5
   mag-enlarge-factor: 0.5
+  mag-shrink-factor: 0.5
 keyboard-shortcut:
-  toggle: Alt+F1
-  exit: Alt+F2
+  shrink: Ctrl+Alt+F9
+  toggle: Ctrl+Alt+F10
+  enlarge: Ctrl+Alt+F11
+  exit: Ctrl+Alt+F12
 mouse-shortcut:
   toggle: Side2
   enlarge: Side1

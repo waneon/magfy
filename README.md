@@ -1,15 +1,15 @@
 # magfy
-universal configurable desktop magnifier controller.
+universal configurable desktop magnifier.
 
 ## Supported
 ### Vendor
 - [x] X11
+- [x] Windows
 - [ ] Wayland
-- [ ] Windows
 
 ### Backend
 - [x] gnome
-- [ ] windows
+- [x] windows
 
 ## Installation
 ### Manual build

@@ -3,9 +3,12 @@ magnifier:
   backend: gnome
   mag-factor: 1.5
   mag-enlarge-factor: 0.5
+  mag-shrink-factor: 0.5
 keyboard-shortcut:
-  toggle: Alt+F1
-  exit: Alt+F2
+  shrink: Ctrl+Alt+F9
+  toggle: Ctrl+Alt+F10
+  enlarge: Ctrl+Alt+F11
+  exit: Ctrl+Alt+F12
 mouse-shortcut:
   toggle: Side2
   enlarge: Side1
