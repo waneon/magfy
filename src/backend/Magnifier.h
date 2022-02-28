@@ -1,7 +1,12 @@
 #ifndef __MAGNIFIER_H
 #define __MAGNIFIER_H
 
+#include <memory>
+#include <spdlog/logger.h>
+
 #include "Config.h"
+
+extern std::shared_ptr<spdlog::logger> logger;
 
 class Magnifier {
   protected:
@@ -24,10 +29,13 @@ class Magnifier {
     virtual void magnify() = 0;
     virtual void unmagnify() = 0;
     void toggle() {
-        if (is_magnified)
+        if (is_magnified) {
+            logger->info("Disable magnifier.");
             unmagnify();
-        else
+        } else {
+            logger->info("Enable magnifier.");
             magnify();
+        }
     }
     virtual void enlarge() = 0;
     virtual void shrink() = 0;
