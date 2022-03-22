@@ -2,8 +2,11 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <cstdlib>
+#include <cstring>
 #include <pwd.h>
+#include <signal.h>
 #include <spdlog/spdlog.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include "core.h"
@@ -12,18 +15,26 @@
 
 extern std::shared_ptr<spdlog::logger> logger;
 
+// cooldown static variable
+bool is_cooldowned = true;
+
+// timer callback
+void cooldown(int _signum) {
+    is_cooldowned = true;
+}
+
 // register keyboard shortcut
-inline static void register_key(const KeyShortcut &, std::string_view, Display *,
-                         Window);
+inline static void register_key(const KeyShortcut &, std::string_view,
+                                Display *, Window);
 // un-register keyboard shortcut
-inline static void unregister_key(const KeyShortcut &, std::string_view, Display *,
-                           Window);
+inline static void unregister_key(const KeyShortcut &, std::string_view,
+                                  Display *, Window);
 // register mouse shortcut
-inline static void register_button(const ButtonShortcut &, std::string_view, Display *,
-                            Window);
+inline static void register_button(const ButtonShortcut &, std::string_view,
+                                   Display *, Window);
 // un-register mouse shortcut
 inline static void unregister_button(const ButtonShortcut &, std::string_view,
-                              Display *, Window);
+                                     Display *, Window);
 
 // x11 error handler
 static int x11_error_handler(Display *, XErrorEvent *e);
@@ -47,6 +58,22 @@ void run(const Config &config) {
     Display *dpy = XOpenDisplay(0);
     Window root = XDefaultRootWindow(dpy);
     XEvent ev;
+
+    // set timer signal handler
+    struct sigaction sa;
+
+    memset(&sa, 0, sizeof sa);
+    sa.sa_handler = cooldown;
+    sigaction(SIGALRM, &sa, NULL);
+
+    // init timer
+    struct itimerval timer;
+
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 0;
+
+    timer.it_value.tv_sec = config.cooldown / 1000;
+    timer.it_value.tv_usec = (config.cooldown % 1000) * 1000;
 
     // set error handler
     XSetErrorHandler(x11_error_handler);
@@ -81,32 +108,45 @@ void run(const Config &config) {
 
         switch (ev.type) {
         case KeyPress:
+            if (is_cooldowned == false)
+                break;
+
             if (ev.xkey.keycode == config.toggle_key.key) {
                 magnifier->toggle();
-                magnifier->update();
+                goto update;
             } else if (ev.xkey.keycode == config.shrink_key.key) {
                 magnifier->shrink();
-                magnifier->update();
+                goto update;
             } else if (ev.xkey.keycode == config.enlarge_key.key) {
                 magnifier->enlarge();
-                magnifier->update();
+                goto update;
             } else if (ev.xkey.keycode == config.exit_key.key) {
                 goto out;
             }
             break;
         case ButtonPress:
+            if (is_cooldowned == false)
+                break;
+
             if (ev.xbutton.button == config.toggle_button.button) {
                 magnifier->toggle();
-                magnifier->update();
+                goto update;
             } else if (ev.xbutton.button == config.shrink_button.button) {
                 magnifier->shrink();
-                magnifier->update();
+                goto update;
             } else if (ev.xbutton.button == config.enlarge_button.button) {
                 magnifier->enlarge();
-                magnifier->update();
+                goto update;
             } else if (ev.xbutton.button == config.exit_button.button) {
                 goto out;
             }
+            break;
+        default:
+            break;
+        update:
+            magnifier->update();
+            is_cooldowned = false;
+            setitimer(ITIMER_REAL, &timer, NULL);
             break;
         }
     }

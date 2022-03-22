@@ -47,6 +47,9 @@ bool convert<Config>::decode(const Node &root, Config &rhs) {
 
         // mag-shrink-factor
         rhs.mag_shrink_factor = magnifier["mag-shrink-factor"].as<double>(0.5);
+
+        // cooldown
+        rhs.cooldown = magnifier["cooldown"].as<int>(100);
     } else {
         invalid_value("magnifier");
         return false;

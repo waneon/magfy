@@ -16,16 +16,20 @@ enum class Backend {
 
 struct Config {
   public:
+    // magnifier
     Backend backend;
     double mag_factor;
     double mag_enlarge_factor;
     double mag_shrink_factor;
+    int cooldown;
 
+    // keyboard-shortcut
     KeyShortcut toggle_key;
     KeyShortcut shrink_key;
     KeyShortcut enlarge_key;
     KeyShortcut exit_key;
 
+    // button-shortcut
     ButtonShortcut toggle_button;
     ButtonShortcut shrink_button;
     ButtonShortcut enlarge_button;
