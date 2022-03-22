@@ -4,37 +4,39 @@
 
 extern std::shared_ptr<spdlog::logger> logger;
 
+inline static void run_gsettings(const char *command) {
+    if (system(command) != 0) {
+        logger->error("gsettings terminated abnormally.");
+        throw std::exception{};
+    }
+}
+
 namespace gnome {
 Magnifier::Magnifier(const Config &config) : ::Magnifier(config) {
     // gnome magnifier on
-    if (system(
-            "gsettings set org.gnome.desktop.a11y.magnifier mag-factor 1.0") !=
-        0) {
-        logger->warn("gsetting terminated abnormally.");
-    };
-    if (system("gsettings set org.gnome.desktop.a11y.applications "
-               "screen-magnifier-enabled true") != 0) {
-        logger->warn("gsetting terminated abnormally.");
-    };
+    run_gsettings(
+        "gsettings set org.gnome.desktop.a11y.magnifier mag-factor 1.0");
+    run_gsettings("gsettings set org.gnome.desktop.a11y.applications "
+                  "screen-magnifier-enabled true");
 
     // gnome magnifier configure
-    if (system("gsettings set org.gnome.desktop.a11y.magnifier caret-tracking "
-               "none") != 0) {
-        logger->warn("gsetting terminated abnormally.");
-    };
-    if (system("gsettings set org.gnome.desktop.a11y.magnifier focus-tracking "
-               "none") != 0) {
-        logger->warn("gsetting terminated abnormally.");
-    };
+    run_gsettings(
+        "gsettings set org.gnome.desktop.a11y.magnifier caret-tracking "
+        "none");
+    run_gsettings(
+        "gsettings set org.gnome.desktop.a11y.magnifier focus-tracking "
+        "none");
 
     logger->info("Initialized magnifier.");
 }
 
 Magnifier::~Magnifier() {
-    if (system("gsettings set org.gnome.desktop.a11y.applications "
-               "screen-magnifier-enabled false") != 0) {
-        logger->warn("gsetting terminated abnormally.");
-    };
+    try {
+        run_gsettings("gsettings set org.gnome.desktop.a11y.applications "
+                      "screen-magnifier-enabled false");
+    } catch (std::exception ex) {
+        logger->warn("gsettings terminated abnormally.");
+    }
 }
 
 void Magnifier::magnify() {
@@ -69,8 +71,6 @@ void Magnifier::update() const {
             "gsettings set org.gnome.desktop.a11y.magnifier "
             "mag-factor %.2f",
             cur_mag_factor);
-    if (system(command) != 0) {
-        logger->warn("gsetting terminated abnormally.");
-    };
+    run_gsettings(command);
 }
 } // namespace gnome

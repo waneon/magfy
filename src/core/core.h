@@ -18,10 +18,6 @@ std::string get_log_file();
 #endif
 
 // run magnifier
-#if defined(MAGFY_WINDOWS)
-bool run(HINSTANCE, Config &);
-#else
-bool run(const Config &);
-#endif
+void run(const Config &);
 
 #endif // __CORE_H

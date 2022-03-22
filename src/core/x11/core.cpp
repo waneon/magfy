@@ -13,16 +13,16 @@
 extern std::shared_ptr<spdlog::logger> logger;
 
 // register keyboard shortcut
-static void register_key(const KeyShortcut &, std::string_view, Display *,
+inline static void register_key(const KeyShortcut &, std::string_view, Display *,
                          Window);
 // un-register keyboard shortcut
-static void unregister_key(const KeyShortcut &, std::string_view, Display *,
+inline static void unregister_key(const KeyShortcut &, std::string_view, Display *,
                            Window);
 // register mouse shortcut
-static void register_button(const ButtonShortcut &, std::string_view, Display *,
+inline static void register_button(const ButtonShortcut &, std::string_view, Display *,
                             Window);
 // un-register mouse shortcut
-static void unregister_button(const ButtonShortcut &, std::string_view,
+inline static void unregister_button(const ButtonShortcut &, std::string_view,
                               Display *, Window);
 
 // x11 error handler
@@ -43,7 +43,7 @@ std::string get_config_file() {
 #endif
 }
 
-bool run(const Config &config) {
+void run(const Config &config) {
     Display *dpy = XOpenDisplay(0);
     Window root = XDefaultRootWindow(dpy);
     XEvent ev;
@@ -59,7 +59,7 @@ bool run(const Config &config) {
         break;
     default:
         logger->error("Could not load magnifier.");
-        return false;
+        throw std::exception{};
     }
 
     // register shortcuts
@@ -126,8 +126,6 @@ out:
     unregister_button(config.shrink_button, "shrink", dpy, root);
     unregister_button(config.enlarge_button, "enlarge", dpy, root);
     unregister_button(config.exit_button, "exit", dpy, root);
-
-    return true;
 }
 
 void register_key(const KeyShortcut &shortcut, std::string_view name,

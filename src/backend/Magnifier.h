@@ -30,10 +30,8 @@ class Magnifier {
     virtual void unmagnify() = 0;
     void toggle() {
         if (is_magnified) {
-            logger->info("Disable magnifier.");
             unmagnify();
         } else {
-            logger->info("Enable magnifier.");
             magnify();
         }
     }
