@@ -105,6 +105,9 @@ std::string get_log_file() {
 }
 
 bool run(HINSTANCE hInstance, Config &config) {
+    // dpi-aware setting
+    SetProcessDPIAware();
+
     // check whether magfy application is already running
     HANDLE hMutex = OpenMutex(MUTEX_ALL_ACCESS, 0, MAGFY_MUTEX_NAME);
     if (!hMutex) {

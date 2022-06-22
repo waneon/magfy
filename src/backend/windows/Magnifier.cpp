@@ -73,6 +73,7 @@ void Magnifier::update() const {
 
         int x = transform_x(p.x);
         int y = transform_y(p.y);
+        // set screen transform
         MagSetFullscreenTransform(cur_mag_factor, x, y);
 
         // input handling
@@ -89,9 +90,12 @@ void Magnifier::update() const {
         rcSource.bottom = rcSource.top + (int)(rcDest.bottom / cur_mag_factor);
 
         MagSetInputTransform(TRUE, &rcSource, &rcDest);
-
     } else {
+        // set screen transform
         MagSetFullscreenTransform(1.0, 0, 0);
+
+        // input handling
+        MagSetInputTransform(FALSE, NULL, NULL);
     }
 }
 } // namespace windows

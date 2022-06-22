@@ -17,11 +17,10 @@ std::string get_config_file();
 std::string get_log_file();
 #endif
 
+// raise error message
+void error(std::string error_message);
+
 // run magnifier
-#if defined(MAGFY_WINDOWS)
-bool run(HINSTANCE, Config &);
-#else
-bool run(const Config &);
-#endif
+void run(const Config &config);
 
 #endif // __CORE_H

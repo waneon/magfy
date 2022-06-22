@@ -1,26 +1,16 @@
-#include <algorithm>
-#include <spdlog/spdlog.h>
-#include <sstream>
-
 #include "Config.h"
 #include "translate.h"
+#include <algorithm>
+#include <exception>
+#include <sstream>
 
-extern std::shared_ptr<spdlog::logger> logger;
-
-// parsing error
-inline void invalid_value(std::string attribute) {
-    logger->error("Invalid value of attribute \"{}\"", attribute);
-}
-inline void invalid_shortcut(std::string attribute) {
-    logger->error("Invalid shortcut of attribute \"{}\"", attribute);
-}
+const static char *SHORTCUT_NAME[4] = {"toggle", "shrink", "enlarge", "exit"};
 
 namespace YAML {
 // parse yaml into Config
 bool convert<Config>::decode(const Node &root, Config &rhs) {
     if (!root || !root.IsMap()) {
-        invalid_value("root");
-        return false;
+        throw StringException{"invalid root field"};
     }
 
     // magnifier
@@ -28,14 +18,12 @@ bool convert<Config>::decode(const Node &root, Config &rhs) {
     if (magnifier && magnifier.IsMap()) {
         // backend
         auto backend = magnifier["backend"].as<std::string>("none");
-
         if (backend == "gnome") {
             rhs.backend = Backend::GNOME;
         } else if (backend == "windows") {
             rhs.backend = Backend::WINDOWS;
         } else {
-            invalid_value("magnifier::backend");
-            return false;
+            throw StringException{"invalid magnifier::backend value"};
         }
 
         // mag-factor
@@ -47,100 +35,49 @@ bool convert<Config>::decode(const Node &root, Config &rhs) {
 
         // mag-shrink-factor
         rhs.mag_shrink_factor = magnifier["mag-shrink-factor"].as<double>(0.5);
+
+        // cooldown
+        rhs.cooldown = magnifier["cooldown"].as<int>(100);
     } else {
-        invalid_value("magnifier");
-        return false;
+        throw StringException{"invalid magnifier field"};
     }
 
     // keyboard-shortcut
     auto kshortcut = root["keyboard-shortcut"];
     if (kshortcut && kshortcut.IsMap()) {
-        auto parse_key = [&](const std::string &name,
-                             const std::string &default_sequence,
-                             KeyShortcut &save) {
-            auto sequence = kshortcut[name].as<std::string>(default_sequence);
-            KeyShortcut shortcut = translate_into_key(sequence);
-            if (shortcut.state == ShortcutState::INVALID) {
-                invalid_shortcut(name);
-                return false;
+        for (int i = 0; i < 4; i++) {
+            std::string seq = kshortcut[SHORTCUT_NAME[i]].as<std::string>("");
+            try {
+                rhs.key_shortcut[i] = translate_into_key(seq);
+            } catch (std::exception ex) {
+                std::string e = "invalid shortcut: keyboard-shortcut::";
+                e += SHORTCUT_NAME[i];
+                throw StringException{e};
             }
-            save = shortcut;
-            return true;
-        };
-
-        // toggle
-        if (!parse_key("toggle", "", rhs.toggle_key))
-            return false;
-
-        // shrink
-        if (!parse_key("shrink", "", rhs.shrink_key))
-            return false;
-
-        // enlarge
-        if (!parse_key("enlarge", "", rhs.enlarge_key))
-            return false;
-
-        // exit
-        if (!parse_key("exit", "", rhs.exit_key))
-            return false;
-
+        }
     } else {
-        // toggle
-        rhs.toggle_key = {.state = ShortcutState::NONE};
-
-        // shrink
-        rhs.shrink_key = {.state = ShortcutState::NONE};
-
-        // enlarge
-        rhs.enlarge_key = {.state = ShortcutState::NONE};
-
-        // exit
-        rhs.exit_key = {.state = ShortcutState::NONE};
+        for (int i = 0; i < 4; i++) {
+            rhs.key_shortcut[i] = translate_into_key("");
+        }
     }
 
     // mouse-shortcut
     auto mshortcut = root["mouse-shortcut"];
     if (mshortcut && mshortcut.IsMap()) {
-        auto parse_button = [&](const std::string &name,
-                                const std::string &default_sequence,
-                                ButtonShortcut &save) {
-            auto sequence = mshortcut[name].as<std::string>(default_sequence);
-            ButtonShortcut shortcut = translate_into_button(sequence);
-            if (shortcut.state == ShortcutState::INVALID) {
-                invalid_shortcut(name);
-                return false;
+        for (int i = 0; i < 4; i++) {
+            std::string seq = mshortcut[SHORTCUT_NAME[i]].as<std::string>("");
+            try {
+                rhs.button_shortcut[i] = translate_into_button(seq);
+            } catch (std::exception ex) {
+                std::string e = "invalid shortcut: mouse-shortcut::";
+                e += SHORTCUT_NAME[i];
+                throw StringException{e};
             }
-            save = shortcut;
-            return true;
-        };
-
-        // toggle
-        if (!parse_button("toggle", "", rhs.toggle_button))
-            return false;
-
-        // shrink
-        if (!parse_button("shrink", "", rhs.shrink_button))
-            return false;
-
-        // enlarge
-        if (!parse_button("enlarge", "", rhs.enlarge_button))
-            return false;
-
-        // exit
-        if (!parse_button("exit", "", rhs.exit_button))
-            return false;
+        }
     } else {
-        // toggle
-        rhs.toggle_button = {.state = ShortcutState::NONE};
-
-        // shrink
-        rhs.shrink_button = {.state = ShortcutState::NONE};
-
-        // enlarge
-        rhs.enlarge_button = {.state = ShortcutState::NONE};
-
-        // exit
-        rhs.exit_button = {.state = ShortcutState::NONE};
+        for (int i = 0; i < 4; i++) {
+            rhs.button_shortcut[i] = translate_into_button("");
+        }
     }
 
     return true;

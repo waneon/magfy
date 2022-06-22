@@ -1,19 +1,14 @@
-#include <fstream>
-#include <spdlog/spdlog.h>
-#include <yaml-cpp/exceptions.h>
-#include <yaml-cpp/yaml.h>
-
-#if defined(MAGFY_WINDOWS)
-#include <spdlog/sinks/basic_file_sink.h>
-#include <windows.h>
-#else
-#include <spdlog/sinks/stdout_color_sinks.h>
-#endif
-
 #include "Config.h"
 #include "core.h"
+#include <yaml-cpp/yaml.h>
+#if defined(MAGFY_WINDOWS)
+#include <windows.h>
+#endif
 
-std::shared_ptr<spdlog::logger> logger;
+// global variables
+#if defined(MAGFY_WINDOWS)
+HINSTANCE g_hInstance = NULL;
+#endif
 
 #if defined(MAGFY_WINDOWS)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
@@ -21,44 +16,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 #else
 int main() {
 #endif
-    // logger setting
+    // vendor-specific configure
 #if defined(MAGFY_WINDOWS)
     logger = spdlog::basic_logger_mt("magfy", get_log_file());
     spdlog::flush_every(std::chrono::seconds(3));
-#else
-    logger = spdlog::stderr_color_mt("magfy");
+
+    g_hInstance = hInstance;
 #endif
 
-    Config config;
     try {
+        // parse config.yaml file
         YAML::Node root = YAML::LoadFile(get_config_file());
-        config = root.as<Config>();
-    } catch (YAML::BadFile ex) {
-        logger->error("Could not find the config file.");
-#if defined(MAGFY_WINDOWS)
-        logger->error("Config file must be placed in the binary folder.");
-#else
-        logger->error(
-            "Config file must be placed in ~/.config/magfy/config.yaml");
-#endif
-        goto error;
-    } catch (YAML::Exception ex) {
-        logger->error("Could not parse the config file.");
-        logger->error("Parse error => {}", ex.msg);
-        goto error;
-    }
-    logger->info("Successfully loaded the config file.");
+        Config config = root.as<Config>();
 
-#if defined(MAGFY_WINDOWS)
-    if (run(hInstance, config)) {
-#else
-    if (run(config)) {
-#endif
-        logger->info("Terminated normally.");
+        // run magfy
+        run(config);
+
         return 0;
-    } else {
-    error:
-        logger->warn("Terminated abnormally.");
+    } catch (std::exception &ex) {
+        error(ex.what());
+
         return 1;
     }
 }
