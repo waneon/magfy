@@ -1,30 +1,23 @@
+#include "core.h"
+#include "Config.h"
+#include "magnifiers.h"
+#include "translate.h"
+#include "windows/Magnifier.h"
 #include <Shlobj.h>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <string_view>
 #include <windows.h>
 
-
-#include "core.h"
-#include "magnifiers.h"
-#include "translate.h"
-#include "windows/Magnifier.h"
-
-extern std::shared_ptr<spdlog::logger> logger;
+static const char *MAGFY_MUTEX_NAME = "Magfy_Mutex.0";
+const static char *SHORTCUT_NAME[4] = {"toggle", "shrink", "enlarge", "exit"};
 
 // global objects
 Magnifier *magnifier = nullptr;
 HHOOK mouse_hook = nullptr;
 Config *global_config = nullptr;
 
-// constants
-static const char *MAGFY_MUTEX_NAME = "Magfy_Mutex.0";
-enum HotkeyID {
-    TOGGLE,
-    SHRINK,
-    ENLARGE,
-    EXIT,
-};
+extern HINSTANCE g_hInstance;
 
 // register keyboard shortcut
 static bool register_key(const KeyShortcut &, std::string_view, int);
@@ -91,20 +84,7 @@ std::string get_config_file() {
 #endif
 }
 
-std::string get_log_file() {
-    wchar_t *path_wchar = nullptr;
-    SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &path_wchar);
-
-    std::string path;
-    convert_unicode_to_ansi_string(path, path_wchar, wcslen(path_wchar));
-
-    path += "/magfy";
-    CreateDirectory(path.c_str(), NULL);
-
-    return path + "/log.txt";
-}
-
-bool run(HINSTANCE hInstance, Config &config) {
+void run(const Config &config) {
     // dpi-aware setting
     SetProcessDPIAware();
 
@@ -113,12 +93,11 @@ bool run(HINSTANCE hInstance, Config &config) {
     if (!hMutex) {
         hMutex = CreateMutex(0, 0, MAGFY_MUTEX_NAME);
     } else {
-        logger->error("Magfy is already running.");
-        return false;
+        throw StringException{"magfy is already running"};
     }
 
     // global config
-    global_config = &config;
+    global_config = const_cast<Config*>(&config);
 
     // Magnifier
     switch (config.backend) {
@@ -126,22 +105,22 @@ bool run(HINSTANCE hInstance, Config &config) {
         magnifier = new windows::Magnifier{config};
         break;
     default:
-        logger->error("Could not load magnifier.");
-        return false;
+        throw StringException{"unknown backend"};
     }
 
     // register shortcuts
-    if (!register_key(config.toggle_key, "toggle", HotkeyID::TOGGLE))
-        return false;
-    if (!register_key(config.shrink_key, "shrink", HotkeyID::SHRINK))
-        return false;
-    if (!register_key(config.enlarge_key, "enlarge", HotkeyID::ENLARGE))
-        return false;
-    if (!register_key(config.exit_key, "exit", HotkeyID::EXIT))
-        return false;
+    for (int i = 0; i < 4; i++) {
+        auto &kshortcut = config.key_shortcut[i];
+        if (kshortcut.state != ShortcutState::NONE) {
+            if (RegisterHotKey(NULL, i, kshortcut.modifiers, kshortcut.key) ==
+                false) {
+                throw StringException{"cannot bind shortcut"};
+            }
+        }
+    }
 
     // mouse hook
-    mouse_hook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, hInstance, NULL);
+    mouse_hook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, g_hInstance, NULL);
 
     // event loop
     MSG msg = {};
@@ -149,23 +128,19 @@ bool run(HINSTANCE hInstance, Config &config) {
         switch (msg.message) {
         case WM_HOTKEY:
             switch (msg.wParam) {
-            case HotkeyID::TOGGLE:
+            case 0:
                 magnifier->toggle();
                 magnifier->update();
                 break;
-            case HotkeyID::SHRINK:
+            case 1:
                 magnifier->shrink();
                 magnifier->update();
                 break;
-            case HotkeyID::ENLARGE:
+            case 2:
                 magnifier->enlarge();
                 magnifier->update();
                 break;
-            case HotkeyID::EXIT:
-                PostQuitMessage(0);
-                break;
-            default:
-                logger->error("Unknown hotkey id.");
+            case 3:
                 PostQuitMessage(0);
                 break;
             }
@@ -179,38 +154,12 @@ bool run(HINSTANCE hInstance, Config &config) {
     delete magnifier;
 
     // un-register shortcuts
-    if (!unregister_key(config.toggle_key, "toggle", HotkeyID::TOGGLE))
-        return false;
-    if (!unregister_key(config.shrink_key, "shrink", HotkeyID::SHRINK))
-        return false;
-    if (!unregister_key(config.enlarge_key, "enlarge", HotkeyID::ENLARGE))
-        return false;
-    if (!unregister_key(config.exit_key, "exit", HotkeyID::EXIT))
-        return false;
-
-    return true;
-}
-
-bool register_key(const KeyShortcut &shortcut, std::string_view name, int id) {
-    if (shortcut.state != ShortcutState::NONE) {
-        if (RegisterHotKey(NULL, id, shortcut.modifiers, shortcut.key) ==
-            false) {
-            logger->error("Could not register key shortcut: {}", name);
-            return false;
+    for (int i = 0; i < 4; i++) {
+        auto &kshortcut = config.key_shortcut[i];
+        if (kshortcut.state != ShortcutState::NONE) {
+            UnregisterHotKey(NULL, i);
         }
     }
-    return true;
-}
-
-bool unregister_key(const KeyShortcut &shortcut, std::string_view name,
-                    int id) {
-    if (shortcut.state != ShortcutState::NONE) {
-        if (UnregisterHotKey(NULL, id) == false) {
-            logger->error("Could not un-register key shortcut: {}", name);
-            return false;
-        }
-    }
-    return true;
 }
 
 static LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
@@ -253,19 +202,19 @@ static LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
             cur.modifiers = MOD_NOREPEAT;
 
         // shortcut comparison
-        if (cur == global_config->toggle_button) {
+        if (cur == global_config->button_shortcut[0]) {
             magnifier->toggle();
             magnifier->update();
             return -1;
-        } else if (cur == global_config->shrink_button) {
+        } else if (cur == global_config->button_shortcut[1]) {
             magnifier->shrink();
             magnifier->update();
             return -1;
-        } else if (cur == global_config->enlarge_button) {
+        } else if (cur == global_config->button_shortcut[2]) {
             magnifier->enlarge();
             magnifier->update();
             return -1;
-        } else if (cur == global_config->exit_button) {
+        } else if (cur == global_config->button_shortcut[3]) {
             PostQuitMessage(0);
             return -1;
         }
@@ -286,16 +235,20 @@ static LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
             break;
         }
 
-        if (cur == global_config->toggle_button) {
+        if (cur == global_config->button_shortcut[0]) {
             return -1;
-        } else if (cur == global_config->shrink_button) {
+        } else if (cur == global_config->button_shortcut[1]) {
             return -1;
-        } else if (cur == global_config->enlarge_button) {
+        } else if (cur == global_config->button_shortcut[2]) {
             return -1;
-        } else if (cur == global_config->exit_button) {
+        } else if (cur == global_config->button_shortcut[3]) {
             return -1;
         }
     }
 
     return CallNextHookEx(mouse_hook, nCode, wParam, lParam);
+}
+
+void error(std::string error_message) {
+    MessageBox(NULL, error_message.c_str(), NULL, MB_OK);
 }

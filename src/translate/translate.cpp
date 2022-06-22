@@ -1,4 +1,5 @@
 #include "translate.h"
+#include "Config.h"
 #include <sstream>
 #include <vector>
 #if defined(MAGFY_WINDOWS)
@@ -14,10 +15,6 @@ const static UINT ANY_MODIFIERS = MOD_NOREPEAT;
 const static Modifiers ANY_MODIFIERS = AnyModifier;
 #endif
 
-#if defined(MAGFY_WINDOWS)
-static int lookup_button_extra(const std::string &);
-#endif
-
 // shortcut class implements
 Shortcut::Shortcut(Modifiers modifiers)
     : state(ShortcutState::NONE), modifiers(modifiers) {}
@@ -26,14 +23,14 @@ void Shortcut::set_state(ShortcutState state) { this->state = state; }
 
 void Shortcut::add_modifier(const std::string &str_modifier) {
 #if defined(MAGFY_WINDOWS)
-    if (string == "Ctrl") {
-        return MOD_CONTROL;
-    } else if (string == "Alt") {
-        return MOD_ALT;
-    } else if (string == "Shift") {
-        return MOD_SHIFT;
+    if (str_modifier == "Ctrl") {
+        this->modifiers |= MOD_CONTROL;
+    } else if (str_modifier == "Alt") {
+        this->modifiers |= MOD_ALT;
+    } else if (str_modifier == "Shift") {
+        this->modifiers |= MOD_SHIFT;
     } else {
-        return 0;
+        throw std::exception{};
     }
 #else
     if (str_modifier == "Ctrl") {
@@ -55,30 +52,28 @@ KeyShortcut::KeyShortcut(Modifiers modifiers, Key key)
 void KeyShortcut::add_key(const std::string &str_key) {
 #if defined(MAGFY_WINDOWS)
     // A-Z
-    if (string.size() == 1 && string[0] >= 'A' && string[0] <= 'Z') {
-        return string[0];
+    if (str_key.size() == 1 && str_key[0] >= 'A' && str_key[0] <= 'Z') {
+        this->key = str_key[0];
     }
-
     // 0-9
-    if (string.size() == 1 && string[0] >= '0' && string[0] <= '9') {
-        return string[0];
+    else if (str_key.size() == 1 && str_key[0] >= '0' && str_key[0] <= '9') {
+        this->key = str_key[0];
     }
-
     // F1-F9
-    if (string.size() == 2 && string[0] == 'F' && string[1] >= '1' &&
-        string[1] <= '9') {
-        return VK_F1 + (string[1] - '1');
+    else if (str_key.size() == 2 && str_key[0] == 'F' && str_key[1] >= '1' &&
+             str_key[1] <= '9') {
+        this->key = VK_F1 + (str_key[1] - '1');
     }
     // F10 - F12
-    if (string == "F10") {
-        return VK_F10;
-    } else if (string == "F11") {
-        return VK_F11;
-    } else if (string == "F12") {
-        return VK_F12;
+    else if (str_key == "F10") {
+        this->key = VK_F10;
+    } else if (str_key == "F11") {
+        this->key = VK_F11;
+    } else if (str_key == "F12") {
+        this->key = VK_F12;
+    } else {
+        throw std::exception{};
     }
-
-    return 0;
 #else
     Display *dpy = XOpenDisplay(0);
 
@@ -110,26 +105,32 @@ ButtonShortcut::ButtonShortcut(Modifiers modifiers, Button button)
 
 void ButtonShortcut::add_button(const std::string &str_button) {
 #if defined(MAGFY_WINDOWS)
-    if (string == "Left") {
-        return WM_LBUTTONDOWN;
-    } else if (string == "Midde") {
-        return WM_MBUTTONDOWN;
-    } else if (string == "Right") {
-        return WM_RBUTTONDOWN;
-    } else if (string == "WheelUp") {
-        return WM_MOUSEWHEEL;
-    } else if (string == "WheelDown") {
-        return WM_MOUSEWHEEL;
-    } else if (string == "WheelLeft") {
-        return WM_MOUSEHWHEEL;
-    } else if (string == "WheelRight") {
-        return WM_MOUSEHWHEEL;
-    } else if (string == "Side1") {
-        return WM_XBUTTONDOWN;
-    } else if (string == "Side2") {
-        return WM_XBUTTONDOWN;
+    if (str_button == "Left") {
+        this->button = WM_LBUTTONDOWN;
+    } else if (str_button == "Midde") {
+        this->button = WM_MBUTTONDOWN;
+    } else if (str_button == "Right") {
+        this->button = WM_RBUTTONDOWN;
+    } else if (str_button == "WheelUp") {
+        this->button = WM_MOUSEWHEEL;
+        this->extra = 1;
+    } else if (str_button == "WheelDown") {
+        this->button = WM_MOUSEWHEEL;
+        this->extra = -1;
+    } else if (str_button == "WheelLeft") {
+        this->button = WM_MOUSEHWHEEL;
+        this->extra = -1;
+    } else if (str_button == "WheelRight") {
+        this->button = WM_MOUSEHWHEEL;
+        this->extra = 1;
+    } else if (str_button == "Side1") {
+        this->button = WM_XBUTTONDOWN;
+        this->extra = 1;
+    } else if (str_button == "Side2") {
+        this->button = WM_XBUTTONDOWN;
+        this->extra = 2;
     } else {
-        return 0;
+        throw std::exception{};
     }
 #else
     if (str_button == "Left") {
@@ -157,33 +158,24 @@ void ButtonShortcut::add_button(const std::string &str_button) {
 }
 
 bool ButtonShortcut::operator==(const ButtonShortcut &other) {
+#if defined(MAGFY_WINDOWS)
+    if (this->button == other.button &&
+        (this->modifiers == other.modifiers ||
+         this->modifiers == ANY_MODIFIERS ||
+         other.modifiers == ANY_MODIFIERS) &&
+        this->extra == other.extra) {
+        return true;
+    }
+    return false;
+#else
     if (this->button == other.button && (this->modifiers == other.modifiers ||
                                          this->modifiers == ANY_MODIFIERS ||
                                          other.modifiers == ANY_MODIFIERS)) {
         return true;
     }
     return false;
-}
-
-#if defined(MAGFY_WINDOWS)
-int lookup_button_extra(const std::string &string) {
-    if (string == "WheelUp") {
-        return 1;
-    } else if (string == "WheelDown") {
-        return -1;
-    } else if (string == "WheelLeft") {
-        return -1;
-    } else if (string == "WheelRight") {
-        return 1;
-    } else if (string == "Side1") {
-        return 1;
-    } else if (string == "Side2") {
-        return 2;
-    } else {
-        return 0;
-    }
-}
 #endif
+}
 
 KeyShortcut translate_into_key(const std::string &sequence) {
     std::istringstream is{sequence};
@@ -244,9 +236,6 @@ ButtonShortcut translate_into_button(const std::string &sequence) {
 
     // button check
     ret.add_button(*token.rbegin());
-#if defined(MAGFY_WINDOWS)
-    ret.extra = lookup_button_extra(*token.rbegin());
-#endif
 
     ret.set_state(ShortcutState::VALID);
     return ret;

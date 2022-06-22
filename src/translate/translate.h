@@ -40,18 +40,21 @@ class KeyShortcut : public Shortcut {
 
     void add_key(const std::string &str_key);
 
-    bool operator==(const KeyShortcut& other);
+    bool operator==(const KeyShortcut &other);
 };
 
 class ButtonShortcut : public Shortcut {
   public:
     Button button;
+#if defined(MAGFY_WINDOWS)
+    int extra;
+#endif
 
     ButtonShortcut(Modifiers modifiers = 0, Button button = 0);
 
     void add_button(const std::string &str_button);
 
-    bool operator==(const ButtonShortcut& other);
+    bool operator==(const ButtonShortcut &other);
 };
 
 KeyShortcut translate_into_key(const std::string &sequence);

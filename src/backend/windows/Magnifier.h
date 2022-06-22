@@ -1,9 +1,8 @@
 #ifndef __WINDOWS_MAGNIFIER_H
 #define __WINDOWS_MAGNIFIER_H
 
-#include <functional>
-
 #include "../Magnifier.h"
+#include <functional>
 
 namespace windows {
 class Magnifier : public ::Magnifier {
@@ -26,6 +25,6 @@ class Magnifier : public ::Magnifier {
 
     virtual void update() const override;
 };
-} // namespace gnome
+} // namespace windows
 
 #endif // __WINDOWS_MAGNIFIER_H

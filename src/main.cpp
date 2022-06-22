@@ -16,11 +16,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 #else
 int main() {
 #endif
-    // vendor-specific configure
 #if defined(MAGFY_WINDOWS)
-    logger = spdlog::basic_logger_mt("magfy", get_log_file());
-    spdlog::flush_every(std::chrono::seconds(3));
-
     g_hInstance = hInstance;
 #endif
 

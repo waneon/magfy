@@ -1,11 +1,7 @@
+#include "./Magnifier.h"
 #include <algorithm>
 #include <magnification.h>
-#include <spdlog/spdlog.h>
 #include <windows.h>
-
-#include "./Magnifier.h"
-
-extern std::shared_ptr<spdlog::logger> logger;
 
 namespace windows {
 const float Magnifier::dead_zone_factor = 0.1;
@@ -43,26 +39,22 @@ int Magnifier::transform_y(int y) const {
 void Magnifier::magnify() {
     is_magnified = true;
     cur_mag_factor = mag_factor;
-    logger->info("Set magnifier mag-factor to {}", cur_mag_factor);
 }
 
 void Magnifier::unmagnify() {
     is_magnified = false;
     cur_mag_factor = 1.0;
-    logger->info("Set magnifier mag-factor to {}", cur_mag_factor);
 }
 
 void Magnifier::enlarge() {
     if (is_magnified) {
         cur_mag_factor += mag_enlarge_factor;
-        logger->info("Set magnifier mag-factor to {}", cur_mag_factor);
     }
 }
 
 void Magnifier::shrink() {
     if (is_magnified && cur_mag_factor - mag_shrink_factor >= 1.0) {
         cur_mag_factor -= mag_shrink_factor;
-        logger->info("Set magnifier mag-factor to {}", cur_mag_factor);
     }
 }
 
