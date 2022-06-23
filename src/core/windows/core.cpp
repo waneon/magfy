@@ -69,16 +69,7 @@ DWORD convert_unicode_to_ansi_string(__out std::string &ansi,
 
 std::string get_config_file() {
 #if defined(NDEBUG)
-    wchar_t *path_wchar = nullptr;
-    SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &path_wchar);
-
-    std::string path;
-    convert_unicode_to_ansi_string(path, path_wchar, wcslen(path_wchar));
-
-    path += "/magfy";
-    CreateDirectory(path.c_str(), NULL);
-
-    return path + "/config.yaml";
+    return "./config.yaml";
 #else
     return CONFIG_FILE;
 #endif
