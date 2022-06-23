@@ -100,8 +100,13 @@ bool KeyShortcut::operator==(const KeyShortcut &other) {
 }
 
 // buttonshortcut class implements
+#if defined(MAGFY_WINDOWS)
+ButtonShortcut::ButtonShortcut(Modifiers modifiers, Button button, int extra)
+    : Shortcut(modifiers), button(button), extra(extra) {}
+#else
 ButtonShortcut::ButtonShortcut(Modifiers modifiers, Button button)
     : Shortcut(modifiers), button(button) {}
+#endif
 
 void ButtonShortcut::add_button(const std::string &str_button) {
 #if defined(MAGFY_WINDOWS)

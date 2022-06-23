@@ -50,7 +50,11 @@ class ButtonShortcut : public Shortcut {
     int extra;
 #endif
 
+#if defined(MAGFY_WINDOWS)
+    ButtonShortcut(Modifiers modifiers = 0, Button button = 0, int extra = 0);
+#else
     ButtonShortcut(Modifiers modifiers = 0, Button button = 0);
+#endif
 
     void add_button(const std::string &str_button);
 

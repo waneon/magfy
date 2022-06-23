@@ -97,7 +97,7 @@ void run(const Config &config) {
     }
 
     // global config
-    global_config = const_cast<Config*>(&config);
+    global_config = const_cast<Config *>(&config);
 
     // Magnifier
     switch (config.backend) {
@@ -120,7 +120,8 @@ void run(const Config &config) {
     }
 
     // mouse hook
-    mouse_hook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, g_hInstance, NULL);
+    mouse_hook =
+        SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, g_hInstance, NULL);
 
     // event loop
     MSG msg = {};
@@ -167,39 +168,39 @@ static LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (wParam == WM_MOUSEMOVE) {
         magnifier->update();
     } else { // mouse shortcut
-        ButtonShortcut cur = {};
-        cur.state = ShortcutState::VALID;
-        cur.button = wParam;
-
         // cur extra
+        int extra = 0;
         auto hook_struct = (MSLLHOOKSTRUCT *)lParam;
         switch (wParam) {
         case WM_MOUSEWHEEL:
         case WM_MOUSEHWHEEL:
             if (GET_WHEEL_DELTA_WPARAM(hook_struct->mouseData) > 0) {
-                cur.extra = 1;
+                extra = 1;
             } else {
-                cur.extra = -1;
+                extra = -1;
             }
             break;
         case WM_XBUTTONDOWN:
         case WM_XBUTTONUP:
-            cur.extra = GET_XBUTTON_WPARAM(hook_struct->mouseData);
+            extra = GET_XBUTTON_WPARAM(hook_struct->mouseData);
             break;
         default:
-            cur.extra = 0;
+            extra = 0;
             break;
         }
 
         // cur modifiers
+        Modifiers modifiers = 0;
         if (GetKeyState(VK_CONTROL) & 0x8000)
-            cur.modifiers |= MOD_CONTROL;
+            modifiers |= MOD_CONTROL;
         if (GetKeyState(VK_MENU) & 0x8000)
-            cur.modifiers |= MOD_ALT;
+            modifiers |= MOD_ALT;
         if (GetKeyState(VK_SHIFT) & 0x8000)
-            cur.modifiers |= MOD_SHIFT;
-        if (cur.modifiers == 0)
-            cur.modifiers = MOD_NOREPEAT;
+            modifiers |= MOD_SHIFT;
+        if (modifiers == 0)
+            modifiers = MOD_NOREPEAT;
+
+        ButtonShortcut cur = {modifiers, static_cast<Button>(wParam), extra};
 
         // shortcut comparison
         if (cur == global_config->button_shortcut[0]) {
@@ -228,7 +229,7 @@ static LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
             cur.button = WM_LBUTTONDOWN;
             break;
         case WM_RBUTTONUP:
-            cur.button = WM_RBUTTONUP;
+            cur.button = WM_RBUTTONDOWN;
             break;
         case WM_XBUTTONUP:
             cur.button = WM_XBUTTONDOWN;
