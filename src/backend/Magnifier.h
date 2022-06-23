@@ -1,12 +1,7 @@
 #ifndef __MAGNIFIER_H
 #define __MAGNIFIER_H
 
-#include <memory>
-#include <spdlog/logger.h>
-
 #include "Config.h"
-
-extern std::shared_ptr<spdlog::logger> logger;
 
 class Magnifier {
   protected:

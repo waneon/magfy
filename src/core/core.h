@@ -17,7 +17,10 @@ std::string get_config_file();
 std::string get_log_file();
 #endif
 
+// raise error message
+void error(std::string error_message);
+
 // run magnifier
-void run(const Config &);
+void run(const Config &config);
 
 #endif // __CORE_H

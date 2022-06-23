@@ -1,15 +1,13 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
-#include <string>
-#include <vector>
-#include <yaml-cpp/yaml.h>
-
 #include "translate.h"
+#include <exception>
+#include <string>
+#include <yaml-cpp/yaml.h>
 
 // supported backends
 enum class Backend {
-    NONE,
     WINDOWS,
     GNOME,
 };
@@ -24,16 +22,24 @@ struct Config {
     int cooldown;
 
     // keyboard-shortcut
-    KeyShortcut toggle_key;
-    KeyShortcut shrink_key;
-    KeyShortcut enlarge_key;
-    KeyShortcut exit_key;
+    // 0 = toggle   1 = shrink
+    // 2 = enlarge  3 = exit
+    KeyShortcut key_shortcut[4];
 
     // button-shortcut
-    ButtonShortcut toggle_button;
-    ButtonShortcut shrink_button;
-    ButtonShortcut enlarge_button;
-    ButtonShortcut exit_button;
+    // 0 = toggle   1 = shrink
+    // 2 = enlarge  3 = exit
+    ButtonShortcut button_shortcut[4];
+};
+
+class StringException : public std::exception {
+  private:
+    std::string e;
+
+  public:
+    StringException(const std::string &e) : e(e) {}
+
+    const char *what() const noexcept { return e.c_str(); }
 };
 
 namespace YAML {

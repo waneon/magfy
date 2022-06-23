@@ -23,9 +23,6 @@ set(MAGFY_LIBS)
 set(VENDOR)
 
 # libs
-find_package(spdlog REQUIRED)
-list(APPEND MAGFY_LIBS spdlog::spdlog)
-
 find_package(yaml-cpp REQUIRED)
 list(APPEND MAGFY_LIBS yaml-cpp)
 

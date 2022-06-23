@@ -1,43 +1,22 @@
+#include "core.h"
+#include "Config.h"
+#include "magnifiers.h"
+#include "translate.h"
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <pwd.h>
 #include <signal.h>
-#include <spdlog/spdlog.h>
 #include <sys/time.h>
 #include <unistd.h>
-
-#include "core.h"
-#include "magnifiers.h"
-#include "translate.h"
-
-extern std::shared_ptr<spdlog::logger> logger;
 
 // cooldown static variable
 bool is_cooldowned = true;
 
-// timer callback
-void cooldown(int _signum) {
-    is_cooldowned = true;
-}
-
-// register keyboard shortcut
-inline static void register_key(const KeyShortcut &, std::string_view,
-                                Display *, Window);
-// un-register keyboard shortcut
-inline static void unregister_key(const KeyShortcut &, std::string_view,
-                                  Display *, Window);
-// register mouse shortcut
-inline static void register_button(const ButtonShortcut &, std::string_view,
-                                   Display *, Window);
-// un-register mouse shortcut
-inline static void unregister_button(const ButtonShortcut &, std::string_view,
-                                     Display *, Window);
-
-// x11 error handler
-static int x11_error_handler(Display *, XErrorEvent *e);
+void cooldown(int _signum) { is_cooldowned = true; }
 
 std::string get_config_file() {
 #if defined(NDEBUG)
@@ -75,9 +54,6 @@ void run(const Config &config) {
     timer.it_value.tv_sec = config.cooldown / 1000;
     timer.it_value.tv_usec = (config.cooldown % 1000) * 1000;
 
-    // set error handler
-    XSetErrorHandler(x11_error_handler);
-
     // Magnifier
     Magnifier *magnifier = nullptr;
     switch (config.backend) {
@@ -85,20 +61,24 @@ void run(const Config &config) {
         magnifier = new gnome::Magnifier{config};
         break;
     default:
-        logger->error("Could not load magnifier.");
-        throw std::exception{};
+        throw StringException{"Unknown backend"};
     }
 
     // register shortcuts
-    register_key(config.toggle_key, "toggle", dpy, root);
-    register_key(config.shrink_key, "shrink", dpy, root);
-    register_key(config.enlarge_key, "enlarge", dpy, root);
-    register_key(config.exit_key, "exit", dpy, root);
+    for (int i = 0; i < 4; i++) {
+        auto &kshortcut = config.key_shortcut[i];
+        if (kshortcut.state != ShortcutState::NONE) {
+            XGrabKey(dpy, kshortcut.key, kshortcut.modifiers, root, False,
+                     GrabModeAsync, GrabModeAsync);
+        }
 
-    register_button(config.toggle_button, "toggle", dpy, root);
-    register_button(config.shrink_button, "shrink", dpy, root);
-    register_button(config.enlarge_button, "enlarge", dpy, root);
-    register_button(config.exit_button, "exit", dpy, root);
+        auto &bshortcut = config.button_shortcut[i];
+        if (bshortcut.state != ShortcutState::NONE) {
+            XGrabButton(dpy, bshortcut.button, bshortcut.modifiers, root, False,
+                        ButtonPressMask, GrabModeAsync, GrabModeAsync, None,
+                        None);
+        }
+    }
 
     // select events
     XSelectInput(dpy, root, KeyPressMask);
@@ -106,21 +86,23 @@ void run(const Config &config) {
     while (true) {
         XNextEvent(dpy, &ev);
 
+        KeyShortcut k{ev.xkey.state, ev.xkey.keycode};
+        ButtonShortcut b{ev.xbutton.state, ev.xbutton.button};
         switch (ev.type) {
         case KeyPress:
             if (is_cooldowned == false)
                 break;
 
-            if (ev.xkey.keycode == config.toggle_key.key) {
+            if (k == config.key_shortcut[0]) {
                 magnifier->toggle();
                 goto update;
-            } else if (ev.xkey.keycode == config.shrink_key.key) {
+            } else if (k == config.key_shortcut[1]) {
                 magnifier->shrink();
                 goto update;
-            } else if (ev.xkey.keycode == config.enlarge_key.key) {
+            } else if (k == config.key_shortcut[2]) {
                 magnifier->enlarge();
                 goto update;
-            } else if (ev.xkey.keycode == config.exit_key.key) {
+            } else if (k == config.key_shortcut[3]) {
                 goto out;
             }
             break;
@@ -128,16 +110,16 @@ void run(const Config &config) {
             if (is_cooldowned == false)
                 break;
 
-            if (ev.xbutton.button == config.toggle_button.button) {
+            if (b == config.button_shortcut[0]) {
                 magnifier->toggle();
                 goto update;
-            } else if (ev.xbutton.button == config.shrink_button.button) {
+            } else if (b == config.button_shortcut[1]) {
                 magnifier->shrink();
                 goto update;
-            } else if (ev.xbutton.button == config.enlarge_button.button) {
+            } else if (b == config.button_shortcut[2]) {
                 magnifier->enlarge();
                 goto update;
-            } else if (ev.xbutton.button == config.exit_button.button) {
+            } else if (b == config.button_shortcut[3]) {
                 goto out;
             }
             break;
@@ -150,60 +132,26 @@ void run(const Config &config) {
             break;
         }
     }
-out:
 
+out:
     // free
     delete magnifier;
     XCloseDisplay(dpy);
 
     // un-register shortcuts
-    unregister_key(config.toggle_key, "toggle", dpy, root);
-    unregister_key(config.shrink_key, "shrink", dpy, root);
-    unregister_key(config.enlarge_key, "enlarge", dpy, root);
-    unregister_key(config.exit_key, "exit", dpy, root);
+    for (int i = 0; i < 4; i++) {
+        auto &kshortcut = config.key_shortcut[i];
+        if (kshortcut.state != ShortcutState::NONE) {
+            XUngrabKey(dpy, kshortcut.key, kshortcut.modifiers, root);
+        }
 
-    unregister_button(config.toggle_button, "toggle", dpy, root);
-    unregister_button(config.shrink_button, "shrink", dpy, root);
-    unregister_button(config.enlarge_button, "enlarge", dpy, root);
-    unregister_button(config.exit_button, "exit", dpy, root);
-}
-
-void register_key(const KeyShortcut &shortcut, std::string_view name,
-                  Display *dpy, Window root) {
-    if (shortcut.state != ShortcutState::NONE) {
-        XGrabKey(dpy, shortcut.key, shortcut.modifiers, root, False,
-                 GrabModeAsync, GrabModeAsync);
+        auto &bshortcut = config.button_shortcut[i];
+        if (bshortcut.state != ShortcutState::NONE) {
+            XUngrabButton(dpy, bshortcut.button, bshortcut.modifiers, root);
+        }
     }
 }
 
-void unregister_key(const KeyShortcut &shortcut, std::string_view name,
-                    Display *dpy, Window root) {
-    if (shortcut.state != ShortcutState::NONE) {
-        XUngrabKey(dpy, shortcut.key, shortcut.modifiers, root);
-    }
-}
-
-void register_button(const ButtonShortcut &shortcut, std::string_view name,
-                     Display *dpy, Window root) {
-    if (shortcut.state != ShortcutState::NONE) {
-        XGrabButton(dpy, shortcut.button, shortcut.modifiers, root, False,
-                    ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
-    }
-}
-
-void unregister_button(const ButtonShortcut &shortcut, std::string_view name,
-                       Display *dpy, Window root) {
-    if (shortcut.state != ShortcutState::NONE) {
-        XUngrabButton(dpy, shortcut.button, shortcut.modifiers, root);
-    }
-}
-
-int x11_error_handler(Display *dpy, XErrorEvent *e) {
-    char error_msg[256];
-
-    XGetErrorText(dpy, e->error_code, error_msg, sizeof(error_msg));
-    spdlog::error("X11 error occured: {}, serial number: {}", error_msg,
-                  e->serial);
-
-    return 0;
+void error(std::string error_message) {
+    std::cout << error_message << std::endl;
 }

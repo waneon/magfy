@@ -1,6 +1,6 @@
+#include "translate.h"
 #include <sstream>
 #include <vector>
-
 #if defined(MAGFY_WINDOWS)
 #include <windows.h>
 #else
@@ -8,115 +8,23 @@
 #include <X11/Xlib.h>
 #endif
 
-#include "translate.h"
-
 #if defined(MAGFY_WINDOWS)
 const static UINT ANY_MODIFIERS = MOD_NOREPEAT;
 #else
 const static Modifiers ANY_MODIFIERS = AnyModifier;
 #endif
 
-static Modifiers lookup_modifier(const std::string &);
-static KeyShortcut::Key lookup_key(const std::string &);
-static ButtonShortcut::Button lookup_button(const std::string &);
 #if defined(MAGFY_WINDOWS)
 static int lookup_button_extra(const std::string &);
 #endif
 
-KeyShortcut translate_into_key(const std::string &sequence) {
-    std::istringstream is{sequence};
-    std::vector<std::string> token;
-    std::string buffer;
+// shortcut class implements
+Shortcut::Shortcut(Modifiers modifiers)
+    : state(ShortcutState::NONE), modifiers(modifiers) {}
 
-    while (std::getline(is, buffer, '+')) {
-        token.push_back(buffer);
-    }
+void Shortcut::set_state(ShortcutState state) { this->state = state; }
 
-    KeyShortcut ret{
-        .state = ShortcutState::INVALID,
-        .modifiers = 0,
-        .key = 0,
-    };
-
-    // if there's no token
-    if (token.size() == 0) {
-        ret.state = ShortcutState::NONE;
-        return ret;
-    }
-
-    // modifiers check
-    for (auto it = token.begin(); it < token.end() - 1; it++) {
-        Modifiers m = lookup_modifier(*it);
-        if (m == 0) {
-            return ret;
-        }
-        ret.modifiers |= m;
-    }
-    // if there's no modifiers
-    if (ret.modifiers == 0) {
-        ret.modifiers = ANY_MODIFIERS;
-    }
-
-    // key check
-    KeyShortcut::Key k = lookup_key(*token.rbegin());
-    if (k == 0) {
-        return ret;
-    }
-    ret.key = k;
-
-    ret.state = ShortcutState::VALID;
-    return ret;
-}
-
-ButtonShortcut translate_into_button(const std::string &sequence) {
-    std::istringstream is{sequence};
-    std::vector<std::string> token;
-    std::string buffer;
-
-    while (std::getline(is, buffer, '+')) {
-        token.push_back(buffer);
-    }
-
-    ButtonShortcut ret{
-        .state = ShortcutState::INVALID,
-        .modifiers = 0,
-        .button = 0,
-    };
-
-    // if there's no token
-    if (token.size() == 0) {
-        ret.state = ShortcutState::NONE;
-        return ret;
-    }
-
-    // modifiers check
-    for (auto it = token.begin(); it < token.end() - 1; it++) {
-        Modifiers m = lookup_modifier(*it);
-        if (m == 0) {
-            return ret;
-        }
-        ret.modifiers |= m;
-    }
-    // if there's no modifiers
-    if (ret.modifiers == 0) {
-        ret.modifiers = ANY_MODIFIERS;
-    }
-
-    // button check
-    ButtonShortcut::Button b = lookup_button(*token.rbegin());
-    if (b == 0) {
-        return ret;
-    }
-#if defined(MAGFY_WINDOWS)
-    ret.extra = lookup_button_extra(*token.rbegin());
-#endif
-    ret.button = b;
-
-    ret.state = ShortcutState::VALID;
-    return ret;
-}
-
-Modifiers lookup_modifier(const std::string &string) {
+void Shortcut::add_modifier(const std::string &str_modifier) {
 #if defined(MAGFY_WINDOWS)
     if (string == "Ctrl") {
         return MOD_CONTROL;
@@ -128,19 +36,23 @@ Modifiers lookup_modifier(const std::string &string) {
         return 0;
     }
 #else
-    if (string == "Ctrl") {
-        return ControlMask;
-    } else if (string == "Alt") {
-        return Mod1Mask;
-    } else if (string == "Shift") {
-        return ShiftMask;
+    if (str_modifier == "Ctrl") {
+        this->modifiers |= ControlMask;
+    } else if (str_modifier == "Alt") {
+        this->modifiers |= Mod1Mask;
+    } else if (str_modifier == "Shift") {
+        this->modifiers |= ShiftMask;
     } else {
-        return None;
+        throw std::exception{};
     }
 #endif
 }
 
-KeyShortcut::Key lookup_key(const std::string &string) {
+// keyshortcut class implements
+KeyShortcut::KeyShortcut(Modifiers modifiers, Key key)
+    : Shortcut(modifiers), key(key) {}
+
+void KeyShortcut::add_key(const std::string &str_key) {
 #if defined(MAGFY_WINDOWS)
     // A-Z
     if (string.size() == 1 && string[0] >= 'A' && string[0] <= 'Z') {
@@ -170,19 +82,33 @@ KeyShortcut::Key lookup_key(const std::string &string) {
 #else
     Display *dpy = XOpenDisplay(0);
 
-    KeySym keysym = XStringToKeysym(string.c_str());
+    KeySym keysym = XStringToKeysym(str_key.c_str());
     if (keysym == NoSymbol) {
         XCloseDisplay(dpy);
-        return None;
+        throw std::exception{};
     }
-    KeyShortcut::Key key = XKeysymToKeycode(dpy, keysym);
+    Key key = XKeysymToKeycode(dpy, keysym);
 
     XCloseDisplay(dpy);
-    return key;
+
+    this->key = key;
 #endif
 }
 
-ButtonShortcut::Button lookup_button(const std::string &string) {
+bool KeyShortcut::operator==(const KeyShortcut &other) {
+    if (this->key == other.key && (this->modifiers == other.modifiers ||
+                                   this->modifiers == ANY_MODIFIERS ||
+                                   other.modifiers == ANY_MODIFIERS)) {
+        return true;
+    }
+    return false;
+}
+
+// buttonshortcut class implements
+ButtonShortcut::ButtonShortcut(Modifiers modifiers, Button button)
+    : Shortcut(modifiers), button(button) {}
+
+void ButtonShortcut::add_button(const std::string &str_button) {
 #if defined(MAGFY_WINDOWS)
     if (string == "Left") {
         return WM_LBUTTONDOWN;
@@ -206,28 +132,37 @@ ButtonShortcut::Button lookup_button(const std::string &string) {
         return 0;
     }
 #else
-    if (string == "Left") {
-        return 1;
-    } else if (string == "Midde") {
-        return 2;
-    } else if (string == "Right") {
-        return 3;
-    } else if (string == "WheelUp") {
-        return 4;
-    } else if (string == "WheelDown") {
-        return 5;
-    } else if (string == "WheelLeft") {
-        return 6;
-    } else if (string == "WheelRight") {
-        return 7;
-    } else if (string == "Side1") {
-        return 8;
-    } else if (string == "Side2") {
-        return 9;
+    if (str_button == "Left") {
+        this->button = 1;
+    } else if (str_button == "Midde") {
+        this->button = 2;
+    } else if (str_button == "Right") {
+        this->button = 3;
+    } else if (str_button == "WheelUp") {
+        this->button = 4;
+    } else if (str_button == "WheelDown") {
+        this->button = 5;
+    } else if (str_button == "WheelLeft") {
+        this->button = 6;
+    } else if (str_button == "WheelRight") {
+        this->button = 7;
+    } else if (str_button == "Side1") {
+        this->button = 8;
+    } else if (str_button == "Side2") {
+        this->button = 9;
     } else {
-        return None;
+        throw std::exception{};
     }
 #endif
+}
+
+bool ButtonShortcut::operator==(const ButtonShortcut &other) {
+    if (this->button == other.button && (this->modifiers == other.modifiers ||
+                                         this->modifiers == ANY_MODIFIERS ||
+                                         other.modifiers == ANY_MODIFIERS)) {
+        return true;
+    }
+    return false;
 }
 
 #if defined(MAGFY_WINDOWS)
@@ -250,12 +185,69 @@ int lookup_button_extra(const std::string &string) {
 }
 #endif
 
-#if defined(MAGFY_WINDOWS)
-bool operator==(const ButtonShortcut &lhs, const ButtonShortcut &rhs) {
-    if (lhs.button == rhs.button && lhs.modifiers == rhs.modifiers &&
-        lhs.state == rhs.state && lhs.extra == rhs.extra) {
-        return true;
+KeyShortcut translate_into_key(const std::string &sequence) {
+    std::istringstream is{sequence};
+    std::vector<std::string> token;
+    std::string buffer;
+    KeyShortcut ret{};
+
+    // tokenize
+    while (std::getline(is, buffer, '+')) {
+        token.push_back(buffer);
     }
-    return false;
+    // if there's no token
+    if (token.size() == 0) {
+        ret.state = ShortcutState::NONE;
+        return ret;
+    }
+
+    // modifiers check
+    for (auto it = token.begin(); it < token.end() - 1; it++) {
+        ret.add_modifier(*it);
+    }
+    // if there's no modifiers
+    if (ret.modifiers == 0) {
+        ret.modifiers = ANY_MODIFIERS;
+    }
+
+    // key check
+    ret.add_key(*token.rbegin());
+
+    ret.set_state(ShortcutState::VALID);
+    return ret;
 }
+
+ButtonShortcut translate_into_button(const std::string &sequence) {
+    std::istringstream is{sequence};
+    std::vector<std::string> token;
+    std::string buffer;
+    ButtonShortcut ret{};
+
+    // tokenize
+    while (std::getline(is, buffer, '+')) {
+        token.push_back(buffer);
+    }
+    // if there's no token
+    if (token.size() == 0) {
+        ret.state = ShortcutState::NONE;
+        return ret;
+    }
+
+    // modifiers check
+    for (auto it = token.begin(); it < token.end() - 1; it++) {
+        ret.add_modifier(*it);
+    }
+    // if there's no modifiers
+    if (ret.modifiers == 0) {
+        ret.modifiers = ANY_MODIFIERS;
+    }
+
+    // button check
+    ret.add_button(*token.rbegin());
+#if defined(MAGFY_WINDOWS)
+    ret.extra = lookup_button_extra(*token.rbegin());
 #endif
+
+    ret.set_state(ShortcutState::VALID);
+    return ret;
+}
