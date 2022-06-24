@@ -14,7 +14,6 @@ const static char *SHORTCUT_NAME[4] = {"toggle", "shrink", "enlarge", "exit"};
 
 // global objects
 Magnifier *magnifier = nullptr;
-HHOOK mouse_hook = nullptr;
 Config *global_config = nullptr;
 
 extern HINSTANCE g_hInstance;
@@ -111,8 +110,7 @@ void run(const Config &config) {
     }
 
     // mouse hook
-    mouse_hook =
-        SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, g_hInstance, NULL);
+    SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, g_hInstance, NULL);
 
     // event loop
     MSG msg = {};
@@ -155,6 +153,9 @@ void run(const Config &config) {
 }
 
 static LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode < HC_ACTION)
+        return CallNextHookEx(NULL, nCode, wParam, lParam);
+
     // mouse move
     if (wParam == WM_MOUSEMOVE) {
         magnifier->update();
@@ -238,7 +239,7 @@ static LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
         }
     }
 
-    return CallNextHookEx(mouse_hook, nCode, wParam, lParam);
+    return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
 void error(std::string error_message) {
