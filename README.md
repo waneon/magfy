@@ -33,5 +33,4 @@ Read [CONFIGURATION.md](CONFIGURATION.md) for configurations.
 
 ## Development
 ### Dependencies
-* spdlog
 * yaml-cpp
