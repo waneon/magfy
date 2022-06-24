@@ -1,7 +1,7 @@
 # config.yaml
 configuration file must be located in the path below.  
 * **X11** `~/.config/magfy/config.yaml`  
-* **Windows** `%localappdata%/magfy/config.yaml`  
+* **Windows** `inside the execution folder`  
 * **Wayland** to be supported
 
 # Example
