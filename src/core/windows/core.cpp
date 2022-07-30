@@ -4,7 +4,6 @@
 #include "translate.h"
 #include "windows/Magnifier.h"
 #include <Shlobj.h>
-#include <spdlog/spdlog.h>
 #include <string>
 #include <string_view>
 #include <windows.h>
